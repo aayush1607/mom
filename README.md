@@ -141,13 +141,13 @@ This is a simple append log — no ML training, no fine-tuning. The profile JSON
 
 | Layer | Choice | Why |
 |---|---|---|
-| **Backend** | Python serverless function | Simple daily cron + on-demand API |
+| **Backend** | Azure Functions (Python) | Serverless, pay-per-use, easy cron via Timer Trigger |
 | **LLM** | Claude Sonnet (via Anthropic API) | Best-in-class instruction following, Indian food context |
 | **Food data** | Swiggy MCP connector | Live order history + restaurant catalog + real ETAs |
 | **Pantry** | Instamart MCP connector | Ingredient availability |
 | **Dine Out** | Swiggy Dineout or Google Places | Nearby restaurant fallback |
-| **Storage** | Simple JSON per user | No database needed at MVP scale |
-| **Notifications** | Push at 6:30 PM | The daily "call from Mom" |
+| **Storage** | Azure Blob Storage (JSON per user) | No database needed at MVP scale |
+| **Notifications** | Azure Notification Hubs → FCM / APNs | The daily "call from Mom" |
 
 ---
 
@@ -174,6 +174,101 @@ User taps "Something else"
              →  Show alternative
              →  Log: mild negative → update profile
 ```
+
+---
+
+## Tech Stack & Architecture
+
+### Stack at a Glance
+
+| Layer | Choice |
+|---|---|
+| **Mobile app** | React Native (iOS-first MVP) |
+| **Backend** | Azure Functions — Python |
+| **Scheduler** | Azure Timer Trigger — 6:30 PM IST daily |
+| **LLM** | Claude Sonnet via Anthropic API |
+| **Food data** | Swiggy MCP connector |
+| **Grocery data** | Instamart MCP connector |
+| **Dine-out fallback** | Google Places API |
+| **Storage** | Azure Blob Storage — `user_profile.json` per user |
+| **Push notifications** | Azure Notification Hubs → FCM / APNs |
+
+---
+
+### Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   React Native App                  │
+│   Onboarding → Suggestion → Order → Kitchen/Nudge   │
+└───────────────────┬─────────────────────────────────┘
+                    │ REST
+┌───────────────────▼─────────────────────────────────┐
+│           Azure Functions — Python (API)            │
+│  • /auth/swiggy   • /suggestion   • /feedback       │
+└───────┬───────────────────────┬─────────────────────┘
+        │                       │
+┌───────▼────────┐   ┌──────────▼──────────────────┐
+│  Swiggy MCP    │   │     Anthropic API            │
+│  Connector     │   │  Claude Sonnet               │
+│                │   │  (profile + nudge → JSON)    │
+│  • order_history    └─────────────────────────────┘
+│  • place_order │
+│  • restaurant  │   ┌─────────────────────────────┐
+│    catalog     │   │  Azure Blob Storage          │
+│  • live ETA    │   │  user_profile.json           │
+└────────────────┘   │  { frequent_dishes,          │
+                     │    active_nudge,             │
+┌────────────────┐   │    last_7_days, ... }        │
+│ Instamart MCP  │   └─────────────────────────────┘
+│  • pantry stock│
+│  • grocery cart│   ┌─────────────────────────────┐
+└────────────────┘   │  Azure Timer Trigger         │
+                     │  6:30 PM IST → Function      │
+                     │  → profile refresh + LLM     │
+                     │  → Notification Hubs push    │
+                     └─────────────────────────────┘
+```
+
+---
+
+### Swiggy MCP Integration
+
+MCP (Model Context Protocol) lets Claude call Swiggy as a **tool** directly inside the LLM prompt cycle — no custom scraping, no brittle REST wrappers.
+
+**What the Swiggy MCP connector exposes:**
+
+| Tool | When mom. uses it |
+|---|---|
+| `swiggy.get_order_history(user_id, days=180)` | Onboarding — build the initial food profile |
+| `swiggy.get_order_history(user_id, days=1)` | Daily cron delta refresh |
+| `swiggy.search_restaurants(query, lat, lng)` | Validate the LLM's restaurant suggestion is real + open |
+| `swiggy.get_restaurant_menu(restaurant_id)` | Confirm the suggested dish is on tonight's menu |
+| `swiggy.get_eta(restaurant_id, address)` | Fetch live ETA to show on the Suggestion screen |
+| `swiggy.place_order(cart)` | Execute the order when user taps *Okay, Mom* |
+| `instamart.check_availability(ingredients[])` | Pantry mode — see if items are in stock nearby |
+
+**How it fits in the daily flow:**
+
+```
+6:30 PM cron
+  └─► Azure Function calls swiggy.get_order_history(delta=24h)
+        → appends to user_profile.json on Azure Blob Storage
+
+  └─► Function builds LLM prompt (profile + nudge + tools available)
+        → Claude reasons over history, may call:
+             swiggy.search_restaurants(...)   ← verify suggestion
+             swiggy.get_eta(...)              ← attach real ETA
+        → returns structured suggestion JSON
+
+User taps "Okay, Mom"
+  └─► Lambda calls swiggy.place_order(cart)
+        → order placed, tracking ID returned
+        → shown on "Done, beta." screen
+```
+
+**Why MCP over a direct API wrapper:**
+Claude can decide *when* to call each tool mid-reasoning — e.g. it might search restaurants only if the top suggestion is delivery, or skip the menu check if the dish is generic enough. This keeps the backend code thin: one prompt, Claude orchestrates the tool calls, one JSON output comes back.
 
 ---
 
