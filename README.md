@@ -1,6 +1,6 @@
-# mom.
+# bawarchi.
 
-> *One call a day. One tap. Dinner, handled.*
+> *One nudge. One tap. Meals, handled.*
 
 ---
 
@@ -10,22 +10,21 @@ I'm 24, living in Bangalore with friends. Most evenings — especially weekends 
 
 The decision fatigue is real. I know roughly what I want — maybe something lighter this week, maybe more protein — but translating that vague feeling into an actual order across hundreds of restaurants is draining.
 
-What I actually want is my mom. She knows what I've been eating. She knows when I'm being lazy vs. when I'm trying to be healthy. She'd just call and say: *"Beta, order this."* And I would. No friction.
+What I actually want is my bawarchi. They know what I've been eating. They know when I'm being lazy vs. when I'm trying to be healthy. They'd just call and say: *"Aaj ke liye, this one."* And I would. No friction.
 
 ---
 
 ## The Solution
 
-**mom.** is an AI agent that acts like your mom deciding dinner for you.
+**bawarchi.** is an AI agent that acts like the household cook who already knows what you should eat.
 
-It connects to your Swiggy history, learns your patterns, absorbs a single "nudge" you configure for the month, and every evening presents you with **one suggestion** — not a list, not a menu, just one thing. You tap *Okay, Mom* and it's ordered. If it's off, you tap *Something else* and get one alternative. That's it.
+It connects to Swiggy at runtime, maintains its own food context from your nudges and feedback, and nudges you at the meal times you choose with **one suggestion** — not a list, not a menu, just one thing. You tap *Okay, Bawarchi* to review and confirm the order. If it's off, you tap *Something else* and get one alternative. That's it.
 
 It works across:
 - **Order In** — Swiggy food delivery
-- **Pantry** — Instamart grocery order if you have ingredients at home
 - **Dine Out** — a nearby restaurant suggestion if you're stepping out
 
-Every choice (accept or reject) teaches it more. Mom gets smarter.
+Every choice (accept or reject) teaches it more. Bawarchi gets smarter.
 
 ---
 
@@ -33,11 +32,11 @@ Every choice (accept or reject) teaches it more. Mom gets smarter.
 
 | Screen | What it does |
 |---|---|
-| **Splash** | Connects with your Swiggy account. Reads last 6 months of orders. |
+| **Splash** | Connects with your Swiggy account. |
 | **The Suggestion** | One meal recommendation, personalized reasoning, ETA + price. Accept or ask for something else. |
-| **Done, beta.** | Order confirmed. Live tracking in Mom's voice. |
-| **A Nudge** | Configure one dietary/lifestyle steer for the month (e.g. "more protein", "spending less"). Mom factors this in, doesn't obsess. |
-| **The Kitchen** | Weekly history view. What Mom ordered, when you said something else, your patterns. |
+| **Pakka.** | Order confirmed. Live tracking in Bawarchi's voice. |
+| **A Nudge** | Configure when Bawarchi should call, what they should keep in mind, and the comfortable budget. |
+| **The Kitchen** | Weekly context view. What Bawarchi suggested, what you accepted/rejected, and your evolving patterns. |
 
 ### Preview
 
@@ -45,7 +44,7 @@ Every choice (accept or reject) teaches it more. Mom gets smarter.
   <tr>
     <td align="center"><img src="frames/onboarding.jpg" width="180"/><br/><sub><b>Splash — Onboarding</b></sub></td>
     <td align="center"><img src="frames/daily-call.jpg" width="180"/><br/><sub><b>The Suggestion</b></sub></td>
-    <td align="center"><img src="frames/order-screen.jpg" width="180"/><br/><sub><b>Done, beta.</b></sub></td>
+    <td align="center"><img src="frames/order-screen.jpg" width="180"/><br/><sub><b>Pakka.</b></sub></td>
     <td align="center"><img src="frames/nudge-config.jpg" width="180"/><br/><sub><b>A Nudge</b></sub></td>
     <td align="center"><img src="frames/kitchen.jpg" width="180"/><br/><sub><b>The Kitchen</b></sub></td>
   </tr>
@@ -57,39 +56,70 @@ Every choice (accept or reject) teaches it more. Mom gets smarter.
 
 The goal: feel like magic. Work on first principles. Stay embarrassingly simple under the hood.
 
-### 1. Data Foundation — "What has this person actually been eating?"
+### 1. Context Foundation — "What does Bawarchi know about this person?"
 
-**On signup**, pull the last 6 months of Swiggy order history via the Swiggy MCP connector:
-- Dish names, cuisine types, restaurants
-- Order timestamps (day of week, time of day)
-- Order frequency and recency
+**On signup**, keep the setup to three decisions:
+1. **Connect Swiggy** — OAuth + saved address resolution
+2. **When should Bawarchi nudge?** — frequency + meal window
+3. **What should Bawarchi keep in mind?** — one food goal + optional budget comfort
 
-Store this as a lightweight **user food profile** — a structured JSON blob, not a vector DB. Keep it human-readable.
+The schedule input should feel like setting an alarm, not filling a diet form:
+
+| Input | Presets | Stored as |
+|---|---|---|
+| Frequency | Everyday, Weekends, Custom days | `frequency` + `days` |
+| Meal windows · multi-select | Breakfast, Lunch, Dinner, Custom — each with its own time | `meals[]` with per-meal `local_time` |
+| Food goals · pick up to 3 | Protein-heavy, Light meal, High fiber, Spend less, Cook more, Vegetarian, Custom (exclusive) | `active_goals[]` (max 3) |
+| Budget | No limit, Under ₹300, Under ₹400, Custom | `budget_cap_inr` or `null` |
+
+Good default: **Everyday Dinner at 7:00 PM, no budget cap**. Multi-meal example: lunch at 1:30 + dinner at 7. Goals are capped at 3 to prevent conflicting nudges (e.g. "spend less + cook more + vegetarian + protein" would paralyze Bawarchi). **Custom is exclusive** — if the user picks "Something else", they can't combine it with presets, because we treat their free-text intent as the whole instruction.
+
+After that, Bawarchi learns only from interactions inside the app:
+- Suggestions shown
+- Accept/reject/ignore signals
+- Alternative requests
+- Orders placed through Bawarchi
+- Nudge changes over time
+
+Store this as a lightweight **food context** — a structured JSON blob, not a vector DB. Keep it human-readable.
 
 ```
 {
-  "frequent_dishes": ["dal khichdi", "paneer tikka", "pasta"],
+  "schedule": {
+    "frequency": "everyday",
+    "days": ["mon", "tue", "wed", "thu", "fri", "sat", "sun"],
+    "meals": [
+      {"meal": "lunch", "local_time": "13:30"},
+      {"meal": "dinner", "local_time": "19:00"}
+    ]
+  },
+  "liked_dishes": ["dal khichdi", "paneer tikka"],
+  "rejected_dishes": ["pasta"],
   "preferred_cuisines": ["north indian", "comfort"],
-  "avg_order_time": "7:30 PM",
-  "price_range": "₹250–₹400",
-  "last_7_days": ["pasta", "pasta", "palak paneer"],
-  "active_nudge": "more protein"
+  "budget_cap_inr": 400,
+  "recent_suggestions": [
+    {"dish": "palak paneer", "signal": "accepted"},
+    {"dish": "pasta", "signal": "rejected"}
+  ],
+  "active_goals": ["protein-heavy", "light meals", "high fiber"],
+  "active_nudge": "Protein-heavy, light, high-fiber meals — lunch at 1:30 and dinner at 7. Under ₹400.",
+  "notes": ["prefers lighter dinners on weekdays"]
 }
 ```
 
-This profile is rebuilt/refreshed once daily in the background.
+This context is rebuilt from Bawarchi's own append-only event log.
 
 ---
 
-### 2. The Recommendation Engine — "What should she eat tonight?"
+### 2. The Recommendation Engine — "What should they eat next?"
 
-At ~6:30 PM every day, a single LLM call is made. No retrieval, no embeddings, no RAG. Just a well-constructed prompt.
+At the user's configured nudge time, a scheduled job builds a prompt from the food context, active nudge, budget comfort, and meal window. The agent then uses Swiggy MCP tools at runtime to validate what is actually orderable before showing the suggestion.
 
-**System prompt** (the "Mom persona"):
-> You are a caring Indian mom who knows exactly what your child has been eating. You want to pick one good dinner for them — practical, balanced, not repetitive. You have a soft nudge they've asked you to keep in mind. Don't overthink. Just decide.
+**System prompt** (the "Bawarchi persona"):
+> You are a caring Indian household cook (a *bawarchi*) who has fed this person for years. You remember what they have accepted, rejected, and nudged you toward. You want to pick one good meal for them — practical, balanced, not repetitive. You have a soft nudge they've asked you to keep in mind. Don't overthink. Just decide.
 
-**User prompt** (the food profile + context):
-> Here's what Beta has been eating this week: [last 7 days]. Their active nudge is: more protein. It's a Thursday evening. What's one good dinner — ordered in, made at home from pantry, or dine out?
+**User prompt** (the food context + runtime constraints):
+> The user has accepted dal/paneer lately, rejected pasta twice, and has an active nudge: protein-heavy dinners under ₹400. It's Thursday dinner time. Pick one good option — ordered in or dine out — then validate it with available MCP tools before showing it.
 
 **LLM output** (structured JSON):
 ```json
@@ -104,36 +134,64 @@ At ~6:30 PM every day, a single LLM call is made. No retrieval, no embeddings, n
 ```
 
 The LLM does two things in one pass:
-- **Avoids repetition** — it sees the last 7 days and steers away
+- **Avoids repetition** — it sees recent Bawarchi suggestions and feedback, then steers away
 - **Steers toward the nudge** — it biases toward the configured goal without being rigid
 
-This is the core magic. One prompt. One output. No multi-step pipeline.
+This is the core magic. One user-facing suggestion, backed by runtime MCP validation.
 
 ---
 
 ### 3. The Nudge — "Steering, not obsessing"
 
-The nudge is a single plain-text preference set by the user:
-- Picked from presets: *more protein / keto-ish / lighter meals / vegetarian week / spending less / cook more at home*
-- Or typed freely: *"less sugar, more greens"*
+The nudge setup is intentionally small. The product should ask:
+1. **When should Bawarchi call?**
+   - Everyday
+   - Weekends
+   - Custom days
+2. **Which meals?** (multi-select — each gets its own time)
+   - Breakfast
+   - Lunch
+   - Dinner
+   - Custom time
+3. **What should Bawarchi keep in mind?** (pick up to 3 — Custom is exclusive)
+   - Protein-heavy
+   - Light meal
+   - High fiber
+   - Spend less
+   - Cook more at home
+   - Vegetarian
+   - Custom *(use alone — disables the others)*
+4. **Budget comfort**
+   - No limit
+   - Under ₹300
+   - Under ₹400
+   - Custom
 
-It's injected into the daily LLM prompt as a soft constraint. The model is instructed to *lean toward* it, not enforce it strictly. If the best match tonight happens to have some carbs, that's fine — Mom uses judgment, not rules.
+The UI can combine these into readable nudges:
+- "Protein-heavy lunch + light dinner under ₹400"
+- "Light dinner on weekdays"
+- "High-fiber breakfast + protein lunch"
+- "Weekend dinner, no budget limit"
 
-Nudge resets or updates monthly. One nudge at a time.
+The goal cap matters: more than 3 active goals leads to conflicting nudges (e.g. "spend less + cook more + vegetarian + protein") and Bawarchi can't decide. Three is the upper bound. *Custom* is exclusive — if the user types their own goal, we treat it as the whole instruction and don't mix it with presets.
+
+It's injected into the scheduled LLM prompt as a soft constraint. The model is instructed to *lean toward* it, not enforce it strictly. If the best match happens to have some carbs, that's fine — Bawarchi uses judgment, not rules.
+
+One active nudge at a time. The schedule can stay stable while the food goal changes monthly.
 
 ---
 
-### 4. Learning Loop — "Mom gets smarter"
+### 4. Learning Loop — "Bawarchi gets smarter"
 
-Every interaction updates the food profile:
+Every interaction updates the food context:
 
-| User action | What it signals | Profile update |
+| User action | What it signals | Context update |
 |---|---|---|
-| *Okay, Mom* | Good suggestion | Reinforce dish type, cuisine, price point |
+| *Okay, Bawarchi* | Good suggestion | Reinforce dish type, cuisine, price point |
 | *Something else* | Mild miss | Note: user wasn't in the mood for this |
 | Ignored the notification | No preference | Light signal, don't over-index |
 
-This is a simple append log — no ML training, no fine-tuning. The profile JSON grows richer over time and the LLM naturally picks up on patterns because it can read the recent history directly in the prompt.
+This is a simple append log — no ML training, no fine-tuning. The context JSON grows richer over time and the LLM naturally picks up on patterns because it can read recent Bawarchi interactions directly in the prompt.
 
 ---
 
@@ -141,39 +199,66 @@ This is a simple append log — no ML training, no fine-tuning. The profile JSON
 
 | Layer | Choice | Why |
 |---|---|---|
-| **Backend** | Azure Functions (Python) | Serverless, pay-per-use, easy cron via Timer Trigger |
-| **LLM** | Claude Sonnet (via Anthropic API) | Best-in-class instruction following, Indian food context |
-| **Food data** | Swiggy MCP connector | Live order history + restaurant catalog + real ETAs |
-| **Pantry** | Instamart MCP connector | Ingredient availability |
-| **Dine Out** | Swiggy Dineout or Google Places | Nearby restaurant fallback |
-| **Storage** | Azure Blob Storage (JSON per user) | No database needed at MVP scale |
-| **Notifications** | Azure Notification Hubs → FCM / APNs | The daily "call from Mom" |
+| **Frontend** | Next.js 15 PWA → Azure Static Web Apps | One installable app for iOS + Android. No app store. Web Push covers notifications on both platforms (iOS 16.4+) |
+| **Backend** | FastAPI (Python 3.12) on Azure Container Apps | Long-running agent, no cold-start pain, scales to zero |
+| **Agent runtime** | LangGraph (Python) with Postgres checkpointer | State machine fits the propose → wait → confirm → place flow; checkpoints survive restarts |
+| **Scheduler** | Azure Functions Timer Trigger (1-min cron) | Tiny stateless function — finds users due in next minute, POSTs to the Container App |
+| **MCP integration** | `langchain-mcp-adapters` for Swiggy MCP | Converts Food + Dineout tools into LangChain tools the graph can call |
+| **LLM** | Azure OpenAI — GPT-4o-mini for routing, GPT-4o for the dish pick | Stays inside Azure billing, low latency from Azure regions |
+| **Storage** | Azure Database for PostgreSQL Flexible Server | One DB: `users`, `food_context` (JSONB), `suggestions`, `push_subscriptions`, `langgraph_checkpoints` |
+| **Push notifications** | Web Push (`pywebpush`) with VAPID keys in Key Vault | No FCM/APNs setup needed for PWA on iOS+Android |
+| **Secrets** | Azure Key Vault | Swiggy tokens (encrypted), VAPID keys, OpenAI key |
 
 ---
 
-### 6. The Daily Flow
+### 6. The Nudge Flow
+
+The agent is a **LangGraph state machine** with one human-in-the-loop pause for explicit order confirmation.
 
 ```
-6:30 PM  →  Cron triggers for active users
-             Pull fresh order history delta (last 24h)
-             Update food profile JSON
-             
-6:31 PM  →  LLM call with profile + nudge + time context
-             Get structured suggestion JSON
-             
-6:32 PM  →  Push notification: "Mom picked dinner 🍲"
-             User opens app → sees The Suggestion screen
-             
-User taps "Okay, Mom"
-             →  Swiggy API places order
-             →  Show tracking (Done, beta. screen)
-             →  Log: positive signal → update profile
-
-User taps "Something else"
-             →  Second LLM call: "Give one alternative, different from the first"
-             →  Show alternative
-             →  Log: mild negative → update profile
+[ Cron tick (1 min) ]
+        │
+        ▼
+[ load_context ]                    ← read food_context + schedule from Postgres
+        │
+        ▼
+[ get_addresses ]                   ← Swiggy MCP
+        │
+        ▼
+[ search_restaurants → search_menu ] ← Swiggy MCP, scoped to per-meal addressId
+        │
+        ▼
+[ pick_dish ]                       ← LLM call: context + nudge + open menu items
+        │
+        ▼
+[ propose_to_user ]                 ← Web Push: "Bawarchi's calling 📞"
+        │
+        ▼
+======== INTERRUPT ========         ← graph checkpoints to Postgres, exits
+        │
+        │   (user opens PWA, taps "Okay, Bawarchi" or "Something else")
+        │
+        ▼
+[ build_cart ] → [ get_food_cart ]  ← Swiggy MCP
+        │
+        ▼
+======== INTERRUPT ========         ← cart confirmation screen
+        │
+        │   (user taps "Confirm — place order")
+        │
+        ▼
+[ place_food_order ]                ← Swiggy MCP
+        │
+        ▼
+[ track_food_order (loop) ]         ← Swiggy MCP, polled at ≥10s cadence
+        │
+        ▼
+[ log_to_context ]                  ← append accepted/swapped/skipped signal
 ```
+
+LangGraph's `interrupt_before` pauses the graph at the two confirmation points; the checkpointer persists the entire run state to Postgres so the resume is exact (same restaurant, same cart, same prices).
+
+**On "Something else":** the graph re-enters `pick_dish` with an excluded-dish list; everything downstream proceeds normally.
 
 ---
 
@@ -183,51 +268,71 @@ User taps "Something else"
 
 | Layer | Choice |
 |---|---|
-| **Mobile app** | React Native (iOS-first MVP) |
-| **Backend** | Azure Functions — Python |
-| **Scheduler** | Azure Timer Trigger — 6:30 PM IST daily |
-| **LLM** | Claude Sonnet via Anthropic API |
-| **Food data** | Swiggy MCP connector |
-| **Grocery data** | Instamart MCP connector |
-| **Dine-out fallback** | Google Places API |
-| **Storage** | Azure Blob Storage — `user_profile.json` per user |
-| **Push notifications** | Azure Notification Hubs → FCM / APNs |
+| **Frontend** | Next.js 15 PWA (App Router) — installable on iOS + Android |
+| **Frontend hosting** | Azure Static Web Apps (free tier — SSL + global CDN built in) |
+| **Backend** | FastAPI (Python 3.12) on Azure Container Apps (consumption, scale-to-zero) |
+| **Agent runtime** | LangGraph (Python) — Postgres checkpointer, `interrupt_before` for human-in-the-loop |
+| **Scheduler** | Azure Functions Timer Trigger (Python) — 1-min cron, fans out due users to the Container App |
+| **MCP integration** | `langchain-mcp-adapters` for Swiggy Food + Dineout |
+| **LLM** | Azure OpenAI — GPT-4o-mini (routing) + GPT-4o (dish pick) |
+| **Storage** | Azure Database for PostgreSQL Flexible Server (Burstable B1ms ~$12/mo at MVP) |
+| **Push notifications** | Web Push (`pywebpush`) — VAPID keys from Azure Key Vault |
+| **Secrets** | Azure Key Vault — Swiggy tokens (encrypted), VAPID, OpenAI key |
+| **Package mgmt** | `uv` (backend), `pnpm` (frontend) |
+| **Infra-as-code** | Bicep / `azd` |
 
 ---
 
 ### Architecture Diagram
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   React Native App                  │
-│   Onboarding → Suggestion → Order → Kitchen/Nudge   │
-└───────────────────┬─────────────────────────────────┘
-                    │ REST
-┌───────────────────▼─────────────────────────────────┐
-│           Azure Functions — Python (API)            │
-│  • /auth/swiggy   • /suggestion   • /feedback       │
-└───────┬───────────────────────┬─────────────────────┘
-        │                       │
-┌───────▼────────┐   ┌──────────▼──────────────────┐
-│  Swiggy MCP    │   │     Anthropic API            │
-│  Connector     │   │  Claude Sonnet               │
-│                │   │  (profile + nudge → JSON)    │
-│  • order_history    └─────────────────────────────┘
-│  • place_order │
-│  • restaurant  │   ┌─────────────────────────────┐
-│    catalog     │   │  Azure Blob Storage          │
-│  • live ETA    │   │  user_profile.json           │
-└────────────────┘   │  { frequent_dishes,          │
-                     │    active_nudge,             │
-┌────────────────┐   │    last_7_days, ... }        │
-│ Instamart MCP  │   └─────────────────────────────┘
-│  • pantry stock│
-│  • grocery cart│   ┌─────────────────────────────┐
-└────────────────┘   │  Azure Timer Trigger         │
-                     │  6:30 PM IST → Function      │
-                     │  → profile refresh + LLM     │
-                     │  → Notification Hubs push    │
-                     └─────────────────────────────┘
+┌──────────────────────────────────────────────────────────┐
+│  Next.js PWA  ·  iOS + Android (installed to home screen)│
+│  Onboarding → Address → Suggestion → Confirm → Kitchen   │
+└─────────────┬───────────────────────────────▲────────────┘
+              │ HTTPS                  Web Push│ (VAPID)
+              ▼                                │
+┌──────────────────────────────────┐           │
+│   Azure Static Web Apps (PWA)    │           │
+│   Service Worker + manifest      │           │
+└─────────────┬────────────────────┘           │
+              │ /api proxy                     │
+              ▼                                │
+┌─────────────────────────────────────────────────────────┐
+│   Azure Container Apps  ·  FastAPI + LangGraph (Python) │
+│                                                         │
+│   • /agent/run         – execute graph for one user     │
+│   • /agent/resume      – continue from interrupt        │
+│   • /push/send         – pywebpush wrapper              │
+│   • /auth/swiggy       – OAuth callback                 │
+│   • /onboarding/*      – schedule, address, goal, budget│
+└──┬──────────────┬──────────────┬────────────────────────┘
+   │              │              │
+   │              │              │ wake on schedule
+   │              │              │
+   │              │      ┌───────┴────────────────────────┐
+   │              │      │ Azure Functions Timer Trigger  │
+   │              │      │ runs every minute              │
+   │              │      │ → SELECT users with next nudge │
+   │              │      │   in [now, now+60s)            │
+   │              │      │ → POST /agent/run per user     │
+   │              │      └────────────────────────────────┘
+   │              │
+   │              ▼
+   │   ┌────────────────────────────────────────────┐
+   │   │  Azure Database for PostgreSQL              │
+   │   │  • users, push_subscriptions               │
+   │   │  • food_context (JSONB)                    │
+   │   │  • suggestions (audit log)                 │
+   │   │  • langgraph_checkpoints                   │
+   │   └────────────────────────────────────────────┘
+   │
+   ├─────────► Swiggy MCP  (Food + Dineout)
+   │           via langchain-mcp-adapters
+   │
+   ├─────────► Azure OpenAI  (GPT-4o-mini routing, GPT-4o pick)
+   │
+   └─────────► Azure Key Vault  (tokens, VAPID, OpenAI key)
 ```
 
 ---
@@ -236,59 +341,65 @@ User taps "Something else"
 
 MCP (Model Context Protocol) lets Claude call Swiggy as a **tool** directly inside the LLM prompt cycle — no custom scraping, no brittle REST wrappers.
 
-**What the Swiggy MCP connector exposes:**
+**Documented Swiggy MCP tools Bawarchi relies on:**
 
-| Tool | When mom. uses it |
+| Tool | When bawarchi. uses it |
 |---|---|
-| `swiggy.get_order_history(user_id, days=180)` | Onboarding — build the initial food profile |
-| `swiggy.get_order_history(user_id, days=1)` | Daily cron delta refresh |
-| `swiggy.search_restaurants(query, lat, lng)` | Validate the LLM's restaurant suggestion is real + open |
-| `swiggy.get_restaurant_menu(restaurant_id)` | Confirm the suggested dish is on tonight's menu |
-| `swiggy.get_eta(restaurant_id, address)` | Fetch live ETA to show on the Suggestion screen |
-| `swiggy.place_order(cart)` | Execute the order when user taps *Okay, Mom* |
-| `instamart.check_availability(ingredients[])` | Pantry mode — see if items are in stock nearby |
+| `get_addresses` | Resolve saved delivery addresses |
+| `search_restaurants` | Find open delivery restaurants for the selected address |
+| `search_menu` | Find a specific dish and orderable item details |
+| `get_restaurant_menu` | Browse/confirm menu availability |
+| `update_food_cart` | Add the chosen item to the Food cart |
+| `get_food_cart` | Show cart summary, total, and available payment methods before confirmation |
+| `place_food_order` | Place the order only after explicit user confirmation |
+| `track_food_order` | Show live status after ordering |
+| `search_restaurants_dineout` / `get_available_slots` / `book_table` | Dineout mode |
 
-**How it fits in the daily flow:**
+**How it fits in the LangGraph state machine:**
 
 ```
-6:30 PM cron
-  └─► Azure Function calls swiggy.get_order_history(delta=24h)
-        → appends to user_profile.json on Azure Blob Storage
+[ Cron tick → POST /agent/run ]
+  └─► load_context        – read food_context + schedule from Postgres
+  └─► get_addresses       – Swiggy MCP
+  └─► search_restaurants  – Swiggy MCP, scoped to per-meal addressId
+  └─► search_menu         – Swiggy MCP, narrow to candidate dishes
+  └─► pick_dish           – LLM picks one item respecting context + nudge + budget
+  └─► propose_to_user     – pywebpush sends "Bawarchi's calling 📞"
+  └─► [ INTERRUPT ]       – LangGraph checkpoints state to Postgres, exits
 
-  └─► Function builds LLM prompt (profile + nudge + tools available)
-        → Claude reasons over history, may call:
-             swiggy.search_restaurants(...)   ← verify suggestion
-             swiggy.get_eta(...)              ← attach real ETA
-        → returns structured suggestion JSON
+[ User taps "Okay, Bawarchi" → POST /agent/resume ]
+  └─► update_food_cart    – Swiggy MCP
+  └─► get_food_cart       – Swiggy MCP, surface items/total/payment/address
+  └─► [ INTERRUPT ]       – cart confirmation screen
 
-User taps "Okay, Mom"
-  └─► Lambda calls swiggy.place_order(cart)
-        → order placed, tracking ID returned
-        → shown on "Done, beta." screen
+[ User taps "Confirm — place order" → POST /agent/resume ]
+  └─► place_food_order    – Swiggy MCP (only after explicit confirm)
+  └─► track_food_order    – Swiggy MCP, polled at ≥10s while user watches
+  └─► log_to_context      – append signal to food_context, persist to Postgres
 ```
 
-**Why MCP over a direct API wrapper:**
-Claude can decide *when* to call each tool mid-reasoning — e.g. it might search restaurants only if the top suggestion is delivery, or skip the menu check if the dish is generic enough. This keeps the backend code thin: one prompt, Claude orchestrates the tool calls, one JSON output comes back.
+**Why a graph instead of a single LLM call:**
+The flow has two non-negotiable user pauses (suggestion confirm + cart confirm) and one optional retry loop (Something else). Encoding this as a LangGraph means each node is independently retryable, the entire run is replayable from any checkpoint, and resume is exact — no re-prompting the LLM, no risk of a different dish on resume.
 
 ---
 
 ## What Makes This Work
 
 - **One suggestion, not a list.** Decision fatigue comes from choice. Remove the choice.
-- **The voice matters.** "Okay, Mom" vs "Place Order" is the whole product. The language makes it feel like trust, not a transaction.
+- **The voice matters.** "Okay, Bawarchi" vs "Place Order" is the whole product. The language makes it feel like trust, not a transaction.
 - **The nudge is a steer, not a filter.** Hard dietary filters break recommendations. A soft nudge bends them.
 - **Learning from rejection is as important as learning from acceptance.** Every "something else" is data.
-- **The LLM reads history like a human.** No embeddings needed — the recent order log fits in a prompt window and the model reasons over it naturally.
+- **The LLM reads Bawarchi's context like a human.** No embeddings needed — recent suggestions, nudges, and accept/reject signals fit in the prompt window.
 
 ---
 
 ## What's Next
 
 - Morning suggestion option (breakfast / lunch)
-- "Mom's note" — a one-line explanation of why she picked it, always shown
+- "Bawarchi's note" — a one-line explanation of why they picked it, always shown
 - Group mode — two flatmates, one compromise suggestion
-- Pantry-first mode — check Instamart for ingredients before defaulting to delivery
-- Weekly kitchen report card with a Mom-style note
+- Pantry top-up — when Bawarchi spots usuals running low (`your_go_to_items` + `get_orders`), offer a one-tap Instamart basket instead of the food order
+- Weekly kitchen report card with a Bawarchi-style note
 
 ---
 

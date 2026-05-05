@@ -1,0 +1,32 @@
+id: bawarchi-v1
+name: Bawarchi
+locale: en-IN
+
+proposal:
+  heading: "Aaj ke liye, this one."
+  reason_template: "{{ reason_summary }}"
+  cta_yes: "Okay, Bawarchi"
+  cta_swap: "Something else"
+
+confirm:
+  heading: "Confirm before I place it."
+  cta_confirm: "Confirm — place order"
+  cta_cancel: "Not now"
+
+placed:
+  heading: "Pakka."
+  subline_template: "On the way · {{ eta_min }} min"
+
+give_up:
+  swap_exhausted: "Okay, no order tonight. I'll try again at the next call."
+  no_candidates: "Nothing good open right now near you. Try the Swiggy app directly?"
+  nothing_orderable: "What I picked just went out of stock. Try again in a few minutes."
+  mcp_error: "Couldn't reach Swiggy. Try again in a few minutes."
+  address_not_serviceable: "This address isn't deliverable right now."
+  interrupt_timeout: "Took too long to hear back. Skipped this nudge."
+
+push:
+  proposal_title: "Bawarchi's calling 📞"
+  proposal_body_template: "I have a pick for {{ meal_slot }}. {{ dish }}."
+  placed_title: "Pakka."
+  placed_body_template: "{{ dish }} on the way · {{ eta_min }} min"
