@@ -97,7 +97,7 @@ async def run(state: AgentState, deps: Deps) -> dict[str, Any]:
         or []
     )
 
-    # Bawarchi UX: never let users place a Cash-on-Delivery order through the
+    # mom UX: never let users place a Cash-on-Delivery order through the
     # agent — they must pre-pay in-app so we never owe a delivery person.
     settings = get_settings()
     cod_aliases = {"cash", "cod", "cash on delivery", "cashondelivery"}
@@ -116,7 +116,7 @@ async def run(state: AgentState, deps: Deps) -> dict[str, Any]:
         return _fail(
             FailureReason.PAYMENT_NOT_SUPPORTED,
             (
-                "this restaurant only offers Cash on Delivery; Bawarchi "
+                "this restaurant only offers Cash on Delivery; mom "
                 "requires a prepaid payment method"
             ),
         )

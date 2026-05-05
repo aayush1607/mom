@@ -104,7 +104,7 @@ async def check_picker_llm() -> bool:
 
 async def main() -> int:
     print("=" * 60)
-    print("Bawarchi backend — live connectivity smoke")
+    print("mom backend — live connectivity smoke")
     print("=" * 60)
 
     checks = [

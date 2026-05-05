@@ -1,11 +1,18 @@
-id: bawarchi-v1
-name: Bawarchi
+id: mom-v1
+name: mom
 locale: en-IN
+
+# Voice rules (see plan.md):
+# - "mom" is a metaphor for the person who already knows what you should
+#   eat. Never address the user with familial / gendered terms ("beta",
+#   "dear", "son" etc.) — lean on "you".
+# - Persona refers to itself as "mom" only as a sign-off / brand mark.
+# - Calm + decisive Hinglish; short sentences.
 
 proposal:
   heading: "Aaj ke liye, this one."
   reason_template: "{{ reason_summary }}"
-  cta_yes: "Okay, Bawarchi"
+  cta_yes: "Okay, mom"
   cta_swap: "Something else"
 
 confirm:
@@ -18,7 +25,7 @@ placed:
   subline_template: "On the way · {{ eta_min }} min"
 
 give_up:
-  swap_exhausted: "Okay, no order tonight. I'll try again at the next call."
+  swap_exhausted: "Okay, no order tonight. I'll try again at the next nudge."
   no_candidates: "Nothing good open right now near you. Try the Swiggy app directly?"
   nothing_orderable: "What I picked just went out of stock. Try again in a few minutes."
   mcp_error: "Couldn't reach Swiggy. Try again in a few minutes."
@@ -26,7 +33,7 @@ give_up:
   interrupt_timeout: "Took too long to hear back. Skipped this nudge."
 
 push:
-  proposal_title: "Bawarchi's calling 📞"
+  proposal_title: "mom's calling 📞"
   proposal_body_template: "I have a pick for {{ meal_slot }}. {{ dish }}."
   placed_title: "Pakka."
   placed_body_template: "{{ dish }} on the way · {{ eta_min }} min"

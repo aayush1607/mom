@@ -192,7 +192,7 @@ class Proposal(BaseModel):
     reason_summary: str                         # raw LLM reason, used by voice templates
     voice_heading: str                          # e.g. "Aaj ke liye, this one."
     voice_reason: str                           # e.g. "Protein-heavy, hits the nudge."
-    voice_cta_yes: str                          # e.g. "Okay, Bawarchi"
+    voice_cta_yes: str                          # e.g. "Okay, mom"
     voice_cta_swap: str                         # e.g. "Something else"
 
 

@@ -52,7 +52,7 @@ async def _register_client(http: httpx.AsyncClient) -> str:
     r = await http.post(
         f"{BASE}/auth/register",
         json={
-            "client_name": "Bawarchi Local Dev",
+            "client_name": "mom Local Dev",
             "redirect_uris": [REDIRECT_URI],
             "grant_types": ["authorization_code"],
             "response_types": ["code"],

@@ -78,7 +78,7 @@ class AgentSettings(BaseSettings):
         True,
         description=(
             "If True, strip Cash / COD from cart payment_methods and refuse "
-            "to confirm if no non-cash method remains. Bawarchi UX requires "
+            "to confirm if no non-cash method remains. mom UX requires "
             "the user to pre-pay in-app."
         ),
     )

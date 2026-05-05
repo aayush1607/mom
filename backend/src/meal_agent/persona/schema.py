@@ -18,7 +18,7 @@ class ProposalVoice(BaseModel):
 
     heading: str                                # "Aaj ke liye, this one."
     reason_template: str                        # "{{ reason_summary }}"
-    cta_yes: str                                # "Okay, Bawarchi"
+    cta_yes: str                                # "Okay, mom"
     cta_swap: str                               # "Something else"
 
 
@@ -51,7 +51,7 @@ class GiveUpVoice(BaseModel):
 class PushVoice(BaseModel):
     """Strings used in the Web Push payload."""
 
-    proposal_title: str                         # "Bawarchi's calling 📞"
+    proposal_title: str                         # "mom's calling 📞"
     proposal_body_template: str                 # "I have a pick for tonight. {{ dish }}."
     placed_title: str                           # "Pakka."
     placed_body_template: str                   # "{{ dish }} on the way · {{ eta_min }} min"

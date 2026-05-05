@@ -1,8 +1,8 @@
-# Copilot Instructions — bawarchi.
+# Copilot Instructions — mom.
 
 ## What This Project Is
 
-**bawarchi.** is an AI agent that picks one meal suggestion at the user's configured nudge time — like a trusted Indian household cook (a *bawarchi*) deciding what they should eat. It connects to Swiggy at runtime, maintains its own food context from nudges and accept/reject signals, and applies a monthly "nudge" as a soft preference. The user sees one suggestion, taps "Okay, Bawarchi" to review and confirm the order, or "Something else" for one alternative.
+**mom.** is an AI agent that picks one meal suggestion at the user's configured nudge time — like the calm, decisive presence (a *mom* — metaphor, not literal) who already knows what they should eat. It connects to Swiggy at runtime, maintains its own food context from nudges and accept/reject signals, and applies a monthly "nudge" as a soft preference. The user sees one suggestion, taps "Okay, mom" to review and confirm the order, or "Something else" for one alternative.
 
 ## Architecture
 
@@ -26,7 +26,7 @@ FastAPI service on Container Apps:
 - `POST /onboarding/{step}` — schedule, address, goal, budget — write to `users` and `food_context`
 - `POST /push/subscribe` — store the user's Web Push subscription (endpoint + p256dh + auth keys)
 - `POST /agent/run` — invoked by the Timer Trigger; starts a LangGraph run for one user
-- `POST /agent/resume` — invoked by the PWA when the user taps "Okay, Bawarchi" or "Confirm — place order"
+- `POST /agent/resume` — invoked by the PWA when the user taps "Okay, mom" or "Confirm — place order"
 - `GET /suggestions/latest` — what the PWA fetches when the notification is tapped
 
 ## Core Design Decisions
@@ -34,11 +34,11 @@ FastAPI service on Container Apps:
 1. **One suggestion, not a list** — the entire product philosophy is removing choice
 2. **Nudge = soft constraint** — injected into the LLM prompt as a bias, never a hard filter
 3. **Onboarding is five steps** — Connect Swiggy → When → Address → Goal → Budget
-4. **No historical Swiggy Food import** — current Food MCP docs do not expose long-term past Food orders; learn from Bawarchi-owned interactions instead
+4. **No historical Swiggy Food import** — current Food MCP docs do not expose long-term past Food orders; learn from mom-owned interactions instead
 5. **No ML training** — learning loop is an append log in `food_context` JSONB; the LLM reads recent suggestions, nudges, and feedback directly in the prompt window
 6. **MCP over REST wrappers** — the LangGraph agent orchestrates Swiggy Food + Dineout tool calls mid-reasoning; backend stays thin
 7. **Food context is JSONB in Postgres** — human-readable, rebuilt from the app event log, queryable when needed but used as a flat blob most of the time
-8. **PWA, not native** — single Next.js codebase, installable, Web Push covers nudges on iOS 16.4+ and Android. Onboarding ends with "Add Bawarchi to your home screen" (notifications no-op without it on iOS).
+8. **PWA, not native** — single Next.js codebase, installable, Web Push covers nudges on iOS 16.4+ and Android. Onboarding ends with "Add mom to your home screen" (notifications no-op without it on iOS).
 9. **LangGraph state machine, not single LLM call** — two `interrupt_before` pauses (suggestion confirm + cart confirm) make the flow durable: the Postgres checkpointer persists state so resume is exact and the user never sees a different dish on retry.
 10. **Scheduler is dumb** — Azure Functions Timer is just a fan-out cron; all logic lives in the Container App graph.
 
@@ -60,10 +60,10 @@ load_context        → get_addresses → search_restaurants → search_menu
   ↓
 pick_dish           ← LLM call (Azure OpenAI), context + nudge + open menu items
   ↓
-propose_to_user     ← pywebpush sends "Bawarchi's calling 📞"
+propose_to_user     ← pywebpush sends "mom's calling 📞"
   ↓
 [INTERRUPT confirm_suggestion]   ← graph state checkpointed to Postgres, Container App returns
-  ↓ (user taps "Okay, Bawarchi" → POST /agent/resume)
+  ↓ (user taps "Okay, mom" → POST /agent/resume)
 update_food_cart → get_food_cart
   ↓
 [INTERRUPT place_order]          ← cart confirmation screen rendered in PWA
@@ -116,11 +116,11 @@ Good default: Everyday Dinner at 7:00 PM with no budget cap. Multi-meal example:
 
 ## LLM Prompt Pattern
 
-The system prompt uses a "trusted Indian household cook (bawarchi)" persona — warm, decisive, like family but not parental. The user prompt includes the food context, active nudge, day/time context, and available MCP tools. Output is structured JSON with: `suggestion`, `source` (`order_in` | `dine_out`), `restaurant`, `reason`, `eta_mins` when available, and `price`.
+The system prompt frames mom as a calm, decisive presence — warm but never parental, never assuming the user's gender, family, or culture. The user prompt includes the food context, active nudge, day/time context, and available MCP tools. Output is structured JSON with: `suggestion`, `source` (`order_in` | `dine_out`), `restaurant`, `reason`, `eta_mins` when available, and `price`.
 
 ## Voice & Copy
 
-Bawarchi is **family-staff, not family**. Voice is light Hinglish, food-host energy, decisive but warm. Never parental, never servile. The product is built for urban Indian millennials including non-Hindi-first users (Bangalore, Chennai, Hyderabad), so single-word Hindi anchors are fine but full Hindi clauses are not.
+mom is **family-staff, not family**. Voice is light Hinglish, food-host energy, decisive but warm. Never parental, never servile. The product is built for urban Indian millennials including non-Hindi-first users (Bangalore, Chennai, Hyderabad), so single-word Hindi anchors are fine but full Hindi clauses are not.
 
 **Hinglish budget rule of thumb:**
 - ✅ Single Hindi anchor + English clause (`"Bolo, what's the budget?"`, `"Aao."`, `"Pakka."`)
@@ -130,15 +130,15 @@ Bawarchi is **family-staff, not family**. Voice is light Hinglish, food-host ene
 
 **Do:**
 - Use Indian-language anchors for short emotional moments: `Aao` (welcome), `Bolo` (tell me), `Pakka` (confirmed), `Aaj ke liye` (for today)
-- Frame the agent as the cook who *decides and feeds*: `"Aaj ke liye, this one."`, `"Pakka. On the way."`
-- Keep CTAs short and action-y: `Okay, Bawarchi`, `Something else`, `All set, Bawarchi →`
+- Frame the agent as the one who *decides and feeds*: `"Aaj ke liye, this one."`, `"Pakka. On the way."`
+- Keep CTAs short and action-y: `Okay, mom`, `Something else`, `All set, mom →`
 - Use Hinglish in voice quotes (`"Bolo, when should I call?"`), plain English for instructional UI labels (`Your saved addresses`, `Total`)
 
 **Don't:**
-- Use `beta`, `bachcha`, or any child-coded address (parental, doesn't fit a cook)
+- Use `beta`, `bachcha`, `dear`, `son`, or any familial/gendered address — the brand calls *itself* mom, never the user anything
 - Use `sahab`, `saab`, `babu`, or any servile/colonial address
 - Lean on guilt or nag mechanics ("you skipped breakfast again" — never)
-- Use gendered pronouns (`she`/`he`) for the agent — bawarchi is gender-neutral, use `they/them`
+- Use gendered pronouns (`she`/`he`) for the agent — mom is gender-neutral, use `they/them`
 - Write voice copy that requires Hindi to parse — full Hindi clauses go in a v2 voice-pack, not the default
 
 **Reference voice samples (current mockup):**
@@ -168,7 +168,7 @@ Bawarchi is **family-staff, not family**. Voice is light Hinglish, food-host ene
 
 - **Next.js 15** App Router, **React 19**, TypeScript strict mode
 - **Tailwind** for styling — design tokens already defined in `frames/screens.html` (cream `#F4EBDB`, terracotta `#C8501F`, sage `#4A7C59`)
-- **Fonts**: Fraunces serif for Bawarchi's voice / hero text; Inter for everything else
+- **Fonts**: Fraunces serif for mom's voice / hero text; Inter for everything else
 - **PWA wrapper**: `@serwist/next` for service worker + manifest
 - **Push subscriptions** registered in the SW, sent to `/api/push/subscribe`
 - **Server actions / route handlers** proxy to the FastAPI Container App; no business logic in Next.js

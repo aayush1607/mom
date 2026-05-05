@@ -1,4 +1,4 @@
-# bawarchi.
+# mom.
 
 > *One nudge. One tap. Meals, handled.*
 
@@ -6,25 +6,44 @@
 
 ## The Problem
 
-I'm 24, living in Bangalore with friends. Most evenings — especially weekends or when the cook doesn't show up — the question *"what do we eat tonight?"* becomes a 30-minute rabbit hole of scrolling through Swiggy, opening menus, closing them, second-guessing, and eventually ordering something mediocre out of exhaustion.
+I'm 24, living in Bangalore with friends. Most evenings — especially weekends or when there's no one to ask — the question *"what do we eat tonight?"* becomes a 30-minute rabbit hole of scrolling through Swiggy, opening menus, closing them, second-guessing, and eventually ordering something mediocre out of exhaustion.
 
 The decision fatigue is real. I know roughly what I want — maybe something lighter this week, maybe more protein — but translating that vague feeling into an actual order across hundreds of restaurants is draining.
 
-What I actually want is my bawarchi. They know what I've been eating. They know when I'm being lazy vs. when I'm trying to be healthy. They'd just call and say: *"Aaj ke liye, this one."* And I would. No friction.
+What I actually want is my mom. They know what I've been eating. They know when I'm being lazy vs. when I'm trying to be healthy. They'd just call and say: *"Aaj ke liye, this one."* And I would. No friction.
 
 ---
 
 ## The Solution
 
-**bawarchi.** is an AI agent that acts like the household cook who already knows what you should eat.
+**mom.** is an AI agent that acts like the person who already knows what you should eat.
 
-It connects to Swiggy at runtime, maintains its own food context from your nudges and feedback, and nudges you at the meal times you choose with **one suggestion** — not a list, not a menu, just one thing. You tap *Okay, Bawarchi* to review and confirm the order. If it's off, you tap *Something else* and get one alternative. That's it.
+It connects to Swiggy at runtime, maintains its own food context from your nudges and feedback, and nudges you at the meal times you choose with **one suggestion** — not a list, not a menu, just one thing. You tap *Okay, mom* to review and confirm the order. If it's off, you tap *Something else* and get one alternative. That's it.
 
 It works across:
 - **Order In** — Swiggy food delivery
 - **Dine Out** — a nearby restaurant suggestion if you're stepping out
 
-Every choice (accept or reject) teaches it more. Bawarchi gets smarter.
+Every choice (accept or reject) teaches it more. mom gets smarter.
+
+---
+
+## Run it locally
+
+The repo has two pieces. Both default to dry-run safe — `place_order` returns
+a `DRYRUN_*` id and never calls Swiggy unless you explicitly opt in.
+
+```bash
+# Terminal 1 — backend (LangGraph + FastAPI on :8765)
+cd backend && uv run uvicorn meal_agent.api.app:app --port 8765
+
+# Terminal 2 — frontend (Next.js PWA on :3000)
+cd frontend && cp .env.local.example .env.local && pnpm install && pnpm dev
+```
+
+Open [http://localhost:3000](http://localhost:3000), tap **Wake mom** on
+Lunch or Dinner, and the run will progress through Suggestion → Cart →
+Pakka. See `backend/README.md` and `frontend/README.md` for setup details.
 
 ---
 
@@ -34,9 +53,9 @@ Every choice (accept or reject) teaches it more. Bawarchi gets smarter.
 |---|---|
 | **Splash** | Connects with your Swiggy account. |
 | **The Suggestion** | One meal recommendation, personalized reasoning, ETA + price. Accept or ask for something else. |
-| **Pakka.** | Order confirmed. Live tracking in Bawarchi's voice. |
-| **A Nudge** | Configure when Bawarchi should call, what they should keep in mind, and the comfortable budget. |
-| **The Kitchen** | Weekly context view. What Bawarchi suggested, what you accepted/rejected, and your evolving patterns. |
+| **Pakka.** | Order confirmed. Live tracking in mom's voice. |
+| **A Nudge** | Configure when mom should call, what they should keep in mind, and the comfortable budget. |
+| **The Kitchen** | Weekly context view. What mom suggested, what you accepted/rejected, and your evolving patterns. |
 
 ### Preview
 
@@ -56,12 +75,12 @@ Every choice (accept or reject) teaches it more. Bawarchi gets smarter.
 
 The goal: feel like magic. Work on first principles. Stay embarrassingly simple under the hood.
 
-### 1. Context Foundation — "What does Bawarchi know about this person?"
+### 1. Context Foundation — "What does mom know about this person?"
 
 **On signup**, keep the setup to three decisions:
 1. **Connect Swiggy** — OAuth + saved address resolution
-2. **When should Bawarchi nudge?** — frequency + meal window
-3. **What should Bawarchi keep in mind?** — one food goal + optional budget comfort
+2. **When should mom nudge?** — frequency + meal window
+3. **What should mom keep in mind?** — one food goal + optional budget comfort
 
 The schedule input should feel like setting an alarm, not filling a diet form:
 
@@ -72,13 +91,13 @@ The schedule input should feel like setting an alarm, not filling a diet form:
 | Food goals · pick up to 3 | Protein-heavy, Light meal, High fiber, Spend less, Cook more, Vegetarian, Custom (exclusive) | `active_goals[]` (max 3) |
 | Budget | No limit, Under ₹300, Under ₹400, Custom | `budget_cap_inr` or `null` |
 
-Good default: **Everyday Dinner at 7:00 PM, no budget cap**. Multi-meal example: lunch at 1:30 + dinner at 7. Goals are capped at 3 to prevent conflicting nudges (e.g. "spend less + cook more + vegetarian + protein" would paralyze Bawarchi). **Custom is exclusive** — if the user picks "Something else", they can't combine it with presets, because we treat their free-text intent as the whole instruction.
+Good default: **Everyday Dinner at 7:00 PM, no budget cap**. Multi-meal example: lunch at 1:30 + dinner at 7. Goals are capped at 3 to prevent conflicting nudges (e.g. "spend less + cook more + vegetarian + protein" would paralyze mom). **Custom is exclusive** — if the user picks "Something else", they can't combine it with presets, because we treat their free-text intent as the whole instruction.
 
-After that, Bawarchi learns only from interactions inside the app:
+After that, mom learns only from interactions inside the app:
 - Suggestions shown
 - Accept/reject/ignore signals
 - Alternative requests
-- Orders placed through Bawarchi
+- Orders placed through mom
 - Nudge changes over time
 
 Store this as a lightweight **food context** — a structured JSON blob, not a vector DB. Keep it human-readable.
@@ -107,7 +126,7 @@ Store this as a lightweight **food context** — a structured JSON blob, not a v
 }
 ```
 
-This context is rebuilt from Bawarchi's own append-only event log.
+This context is rebuilt from mom's own append-only event log.
 
 ---
 
@@ -115,8 +134,8 @@ This context is rebuilt from Bawarchi's own append-only event log.
 
 At the user's configured nudge time, a scheduled job builds a prompt from the food context, active nudge, budget comfort, and meal window. The agent then uses Swiggy MCP tools at runtime to validate what is actually orderable before showing the suggestion.
 
-**System prompt** (the "Bawarchi persona"):
-> You are a caring Indian household cook (a *bawarchi*) who has fed this person for years. You remember what they have accepted, rejected, and nudged you toward. You want to pick one good meal for them — practical, balanced, not repetitive. You have a soft nudge they've asked you to keep in mind. Don't overthink. Just decide.
+**System prompt** (the "mom persona"):
+> You are mom — the calm, decisive presence who already knows what this person should eat. You remember what they have accepted, rejected, and nudged you toward. Pick one good meal for them — practical, balanced, not repetitive. Lean toward the soft nudge they've asked you to keep in mind. Don't overthink. Just decide. Speak in short sentences. Never address the user with familial or gendered terms.
 
 **User prompt** (the food context + runtime constraints):
 > The user has accepted dal/paneer lately, rejected pasta twice, and has an active nudge: protein-heavy dinners under ₹400. It's Thursday dinner time. Pick one good option — ordered in or dine out — then validate it with available MCP tools before showing it.
@@ -134,7 +153,7 @@ At the user's configured nudge time, a scheduled job builds a prompt from the fo
 ```
 
 The LLM does two things in one pass:
-- **Avoids repetition** — it sees recent Bawarchi suggestions and feedback, then steers away
+- **Avoids repetition** — it sees recent mom suggestions and feedback, then steers away
 - **Steers toward the nudge** — it biases toward the configured goal without being rigid
 
 This is the core magic. One user-facing suggestion, backed by runtime MCP validation.
@@ -144,7 +163,7 @@ This is the core magic. One user-facing suggestion, backed by runtime MCP valida
 ### 3. The Nudge — "Steering, not obsessing"
 
 The nudge setup is intentionally small. The product should ask:
-1. **When should Bawarchi call?**
+1. **When should mom call?**
    - Everyday
    - Weekends
    - Custom days
@@ -153,7 +172,7 @@ The nudge setup is intentionally small. The product should ask:
    - Lunch
    - Dinner
    - Custom time
-3. **What should Bawarchi keep in mind?** (pick up to 3 — Custom is exclusive)
+3. **What should mom keep in mind?** (pick up to 3 — Custom is exclusive)
    - Protein-heavy
    - Light meal
    - High fiber
@@ -173,25 +192,25 @@ The UI can combine these into readable nudges:
 - "High-fiber breakfast + protein lunch"
 - "Weekend dinner, no budget limit"
 
-The goal cap matters: more than 3 active goals leads to conflicting nudges (e.g. "spend less + cook more + vegetarian + protein") and Bawarchi can't decide. Three is the upper bound. *Custom* is exclusive — if the user types their own goal, we treat it as the whole instruction and don't mix it with presets.
+The goal cap matters: more than 3 active goals leads to conflicting nudges (e.g. "spend less + cook more + vegetarian + protein") and mom can't decide. Three is the upper bound. *Custom* is exclusive — if the user types their own goal, we treat it as the whole instruction and don't mix it with presets.
 
-It's injected into the scheduled LLM prompt as a soft constraint. The model is instructed to *lean toward* it, not enforce it strictly. If the best match happens to have some carbs, that's fine — Bawarchi uses judgment, not rules.
+It's injected into the scheduled LLM prompt as a soft constraint. The model is instructed to *lean toward* it, not enforce it strictly. If the best match happens to have some carbs, that's fine — mom uses judgment, not rules.
 
 One active nudge at a time. The schedule can stay stable while the food goal changes monthly.
 
 ---
 
-### 4. Learning Loop — "Bawarchi gets smarter"
+### 4. Learning Loop — "mom gets smarter"
 
 Every interaction updates the food context:
 
 | User action | What it signals | Context update |
 |---|---|---|
-| *Okay, Bawarchi* | Good suggestion | Reinforce dish type, cuisine, price point |
+| *Okay, mom* | Good suggestion | Reinforce dish type, cuisine, price point |
 | *Something else* | Mild miss | Note: user wasn't in the mood for this |
 | Ignored the notification | No preference | Light signal, don't over-index |
 
-This is a simple append log — no ML training, no fine-tuning. The context JSON grows richer over time and the LLM naturally picks up on patterns because it can read recent Bawarchi interactions directly in the prompt.
+This is a simple append log — no ML training, no fine-tuning. The context JSON grows richer over time and the LLM naturally picks up on patterns because it can read recent mom interactions directly in the prompt.
 
 ---
 
@@ -231,12 +250,12 @@ The agent is a **LangGraph state machine** with one human-in-the-loop pause for 
 [ pick_dish ]                       ← LLM call: context + nudge + open menu items
         │
         ▼
-[ propose_to_user ]                 ← Web Push: "Bawarchi's calling 📞"
+[ propose_to_user ]                 ← Web Push: "mom's calling 📞"
         │
         ▼
 ======== INTERRUPT ========         ← graph checkpoints to Postgres, exits
         │
-        │   (user opens PWA, taps "Okay, Bawarchi" or "Something else")
+        │   (user opens PWA, taps "Okay, mom" or "Something else")
         │
         ▼
 [ build_cart ] → [ get_food_cart ]  ← Swiggy MCP
@@ -341,9 +360,9 @@ LangGraph's `interrupt_before` pauses the graph at the two confirmation points; 
 
 MCP (Model Context Protocol) lets Claude call Swiggy as a **tool** directly inside the LLM prompt cycle — no custom scraping, no brittle REST wrappers.
 
-**Documented Swiggy MCP tools Bawarchi relies on:**
+**Documented Swiggy MCP tools mom relies on:**
 
-| Tool | When bawarchi. uses it |
+| Tool | When mom. uses it |
 |---|---|
 | `get_addresses` | Resolve saved delivery addresses |
 | `search_restaurants` | Find open delivery restaurants for the selected address |
@@ -364,10 +383,10 @@ MCP (Model Context Protocol) lets Claude call Swiggy as a **tool** directly insi
   └─► search_restaurants  – Swiggy MCP, scoped to per-meal addressId
   └─► search_menu         – Swiggy MCP, narrow to candidate dishes
   └─► pick_dish           – LLM picks one item respecting context + nudge + budget
-  └─► propose_to_user     – pywebpush sends "Bawarchi's calling 📞"
+  └─► propose_to_user     – pywebpush sends "mom's calling 📞"
   └─► [ INTERRUPT ]       – LangGraph checkpoints state to Postgres, exits
 
-[ User taps "Okay, Bawarchi" → POST /agent/resume ]
+[ User taps "Okay, mom" → POST /agent/resume ]
   └─► update_food_cart    – Swiggy MCP
   └─► get_food_cart       – Swiggy MCP, surface items/total/payment/address
   └─► [ INTERRUPT ]       – cart confirmation screen
@@ -386,20 +405,20 @@ The flow has two non-negotiable user pauses (suggestion confirm + cart confirm) 
 ## What Makes This Work
 
 - **One suggestion, not a list.** Decision fatigue comes from choice. Remove the choice.
-- **The voice matters.** "Okay, Bawarchi" vs "Place Order" is the whole product. The language makes it feel like trust, not a transaction.
+- **The voice matters.** "Okay, mom" vs "Place Order" is the whole product. The language makes it feel like trust, not a transaction.
 - **The nudge is a steer, not a filter.** Hard dietary filters break recommendations. A soft nudge bends them.
 - **Learning from rejection is as important as learning from acceptance.** Every "something else" is data.
-- **The LLM reads Bawarchi's context like a human.** No embeddings needed — recent suggestions, nudges, and accept/reject signals fit in the prompt window.
+- **The LLM reads mom's context like a human.** No embeddings needed — recent suggestions, nudges, and accept/reject signals fit in the prompt window.
 
 ---
 
 ## What's Next
 
 - Morning suggestion option (breakfast / lunch)
-- "Bawarchi's note" — a one-line explanation of why they picked it, always shown
+- "mom's note" — a one-line explanation of why they picked it, always shown
 - Group mode — two flatmates, one compromise suggestion
-- Pantry top-up — when Bawarchi spots usuals running low (`your_go_to_items` + `get_orders`), offer a one-tap Instamart basket instead of the food order
-- Weekly kitchen report card with a Bawarchi-style note
+- Pantry top-up — when mom spots usuals running low (`your_go_to_items` + `get_orders`), offer a one-tap Instamart basket instead of the food order
+- Weekly kitchen report card with a mom-style note
 
 ---
 

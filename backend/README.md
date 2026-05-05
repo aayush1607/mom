@@ -1,6 +1,6 @@
 # meal-agent backend
 
-The brand-agnostic meal-decision agent that powers **bawarchi.** (and any
+The brand-agnostic meal-decision agent that powers **mom.** (and any
 future brand layered on top of it). A FastAPI service wrapping a LangGraph
 agent that takes a prompt + user context, finds real Swiggy restaurants/
 dishes via MCP, proposes one suggestion, and (after two human-in-the-loop
@@ -102,7 +102,7 @@ src/meal_agent/
     schema.py           # VoicePack + sub-models
     loader.py           # load_pack(id) — YAML reader, lru_cached
     packs/
-      bawarchi-v1.yaml  # first concrete brand pack
+      mom-v1.yaml       # first concrete brand pack
   tools/
     llm.py              # AzureChatOpenAI factory (router + picker)
     swiggy_mcp.py       # MultiServerMCPClient wrapper, per-user OAuth
@@ -171,9 +171,9 @@ request body (per-user, per-run).
     },
     "constraints": { "max_price_inr": 400, "max_eta_min": 45, "vegetarian": false },
     "persona": {
-      "system_prompt": "You are bawarchi, a meal-decision assistant...",
-      "voice_pack_id": "bawarchi-v1",
-      "name": "Bawarchi"
+      "system_prompt": "You are mom, a meal-decision assistant...",
+      "voice_pack_id": "mom-v1",
+      "name": "mom"
     }
   },
   "user_token": "<swiggy oauth token>"
