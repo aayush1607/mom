@@ -3,7 +3,7 @@
  * sync, no API caching (the agent is dynamic and dry-run safe — re-fetches
  * are fine). */
 
-const CACHE = "mom-shell-v3";
+const CACHE = "mom-shell-v4";
 const SHELL = ["/", "/today", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -42,5 +42,37 @@ self.addEventListener("fetch", (event) => {
         .catch(() => cached);
       return cached ?? fetched;
     }),
+  );
+});
+
+// Tap on a meal-time reminder → open /today (or focus the tab if it's
+// already open). Without this, notifications just disappear silently.
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) || "/today";
+  event.waitUntil(
+    (async () => {
+      const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      // Prefer focusing an existing window of the app, navigating it to /today.
+      for (const client of all) {
+        try {
+          const u = new URL(client.url);
+          if (u.origin === self.location.origin) {
+            await client.focus();
+            if ("navigate" in client && u.pathname !== targetUrl) {
+              try {
+                await client.navigate(targetUrl);
+              } catch {
+                // Some browsers block navigate() across origins; ignore.
+              }
+            }
+            return;
+          }
+        } catch {
+          // Swallow malformed URLs; fall through to opening a new window.
+        }
+      }
+      await self.clients.openWindow(targetUrl);
+    })(),
   );
 });

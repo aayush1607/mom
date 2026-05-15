@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+import { ReminderRunner } from "@/components/ReminderRunner";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default function RootLayout({
       <body className="bg-bg text-ink min-h-screen antialiased">
         {children}
         <ServiceWorkerRegistrar />
+        <ReminderRunner />
       </body>
     </html>
   );

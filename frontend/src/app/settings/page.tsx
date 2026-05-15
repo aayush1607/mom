@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { AddressPicker } from "@/components/AddressPicker";
 import { Phone } from "@/components/Phone";
+import { ReminderSettings } from "@/components/ReminderSettings";
 import { Button } from "@/components/ui/Button";
 import { useAddresses } from "@/lib/useAddresses";
 import {
@@ -145,6 +146,10 @@ export default function SettingsPage() {
             </label>
           </div>
         ))}
+      </section>
+
+      <section className="px-6 sm:px-10 pt-2 pb-2">
+        <ReminderSettings />
       </section>
 
       <footer className="px-6 sm:px-10 pb-8 pt-2 flex flex-col gap-2">
