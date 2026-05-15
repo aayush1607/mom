@@ -35,7 +35,7 @@ export function GiveUp({ error, status }: GiveUpProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-12 pb-2 flex items-center justify-between">
+      <header className="px-6 sm:px-8 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
         <span className="brand-mark text-[18px]">
           mom<span className="dot">.</span>
         </span>
@@ -44,14 +44,14 @@ export function GiveUp({ error, status }: GiveUpProps) {
         </span>
       </header>
 
-      <section className="px-6 pt-12 flex-1">
-        <h1 className="h-display text-[34px] mb-3">{heading}</h1>
-        <p className="text-ink-2 text-[15px] leading-snug max-w-[28ch]">
+      <section className="px-6 sm:px-8 pt-12 sm:pt-16 flex-1">
+        <h1 className="h-display text-[34px] sm:text-[44px] mb-3">{heading}</h1>
+        <p className="text-ink-2 text-[15px] sm:text-[17px] leading-snug max-w-[34ch]">
           {subline}
         </p>
 
         {error?.detail && !cancelled ? (
-          <details className="mt-6 text-[12px] text-ink-3">
+          <details className="mt-6 text-[12px] sm:text-[13px] text-ink-3">
             <summary className="cursor-pointer">Technical details</summary>
             <pre className="whitespace-pre-wrap break-words mt-2">
               {error.detail}
@@ -60,7 +60,7 @@ export function GiveUp({ error, status }: GiveUpProps) {
         ) : null}
       </section>
 
-      <footer className="px-6 pb-8 pt-4 flex flex-col gap-3">
+      <footer className="px-6 sm:px-8 pb-8 sm:pb-10 pt-4 flex flex-col gap-3">
         <Link href="/today" className="block">
           <Button fullWidth>Back home</Button>
         </Link>

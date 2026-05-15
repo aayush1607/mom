@@ -30,8 +30,8 @@ export default function SettingsPage() {
   }
 
   return (
-    <Phone label="settings">
-      <header className="px-6 pt-12 pb-2 flex items-center justify-between">
+    <Phone label="settings" width="wide">
+      <header className="px-6 sm:px-10 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
         <Link
           href="/today"
           className="text-[12px] uppercase tracking-[0.18em] text-ink-3 hover:text-ink"
@@ -43,21 +43,25 @@ export default function SettingsPage() {
         </span>
       </header>
 
-      <section className="px-6 pt-4">
-        <h1 className="h-display text-[28px] mb-1">Tell mom when.</h1>
-        <p className="text-ink-3 text-[13px]">
+      <section className="px-6 sm:px-10 pt-4">
+        <h1 className="h-display text-[28px] sm:text-[36px] mb-1">
+          Tell mom when.
+        </h1>
+        <p className="text-ink-3 text-[13px] sm:text-[14px]">
           Saved on this device. No account yet.
         </p>
       </section>
 
-      <section className="px-6 pt-6 flex-1 space-y-4 pb-4">
+      <section className="px-6 sm:px-10 pt-6 pb-4 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {slots.map((slot) => (
           <div
             key={slot.id}
-            className="rounded-3xl border border-line bg-bg/30 p-5 space-y-3"
+            className="rounded-3xl border border-line bg-bg/30 p-5 sm:p-6 space-y-3"
           >
             <div className="flex items-center justify-between">
-              <div className="text-[15px] font-medium">{slot.label}</div>
+              <div className="text-[15px] sm:text-[16px] font-medium">
+                {slot.label}
+              </div>
               <button
                 type="button"
                 onClick={() => update(slot.id, { enabled: !slot.enabled })}
@@ -121,7 +125,7 @@ export default function SettingsPage() {
         ))}
       </section>
 
-      <footer className="px-6 pb-8 pt-2 flex flex-col gap-2">
+      <footer className="px-6 sm:px-10 pb-8 pt-2 flex flex-col gap-2">
         <Button fullWidth onClick={persist}>
           Save
         </Button>

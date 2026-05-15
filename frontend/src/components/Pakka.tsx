@@ -15,7 +15,7 @@ export function Pakka({ order }: PakkaProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-12 pb-2 flex items-center justify-between">
+      <header className="px-6 sm:px-8 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
         <span className="brand-mark text-[18px]">
           mom<span className="dot">.</span>
         </span>
@@ -28,22 +28,16 @@ export function Pakka({ order }: PakkaProps) {
         )}
       </header>
 
-      <section className="px-6 pt-6">
-        <h1 className="h-display text-[44px] mb-2">Pakka.</h1>
-        <p className="text-ink-2 text-[15px]">
-          {order.eta_min
-            ? `On the way · ${order.eta_min} min`
-            : "On the way."}
+      <section className="px-6 sm:px-8 pt-6">
+        <h1 className="h-display text-[44px] sm:text-[56px] mb-2">Pakka.</h1>
+        <p className="text-ink-2 text-[15px] sm:text-[16px]">
+          {order.eta_min ? `On the way · ${order.eta_min} min` : "On the way."}
         </p>
       </section>
 
-      <section className="px-6 pt-8 flex-1">
-        <div className="rounded-3xl border border-line bg-bg/40 p-5 space-y-3">
-          <Row
-            label="Order id"
-            value={order.order_id}
-            mono
-          />
+      <section className="px-6 sm:px-8 pt-8 flex-1">
+        <div className="rounded-3xl border border-line bg-bg/40 p-5 sm:p-6 space-y-3">
+          <Row label="Order id" value={order.order_id} mono />
           <Row
             label="Placed"
             value={placedAt.toLocaleTimeString("en-IN", {
@@ -57,7 +51,7 @@ export function Pakka({ order }: PakkaProps) {
         </div>
 
         {isDryRun ? (
-          <p className="mt-4 text-[12px] text-ink-3 leading-snug">
+          <p className="mt-4 text-[12px] sm:text-[13px] text-ink-3 leading-snug">
             This was a dry-run. mom never called Swiggy — toggle{" "}
             <code className="text-ink-2">AGENT_LIVE_ORDERS_ENABLED=true</code>{" "}
             in <code className="text-ink-2">backend/.env</code> to place a real
@@ -66,7 +60,7 @@ export function Pakka({ order }: PakkaProps) {
         ) : null}
       </section>
 
-      <footer className="px-6 pb-8 pt-4 flex flex-col gap-3">
+      <footer className="px-6 sm:px-8 pb-8 sm:pb-10 pt-4 flex flex-col gap-3">
         <a
           href="https://www.swiggy.com/my-account/orders"
           target="_blank"

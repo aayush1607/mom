@@ -33,33 +33,39 @@ export function Suggestion({ runId, proposal, onAfterAction }: SuggestionProps) 
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-12 pb-2 flex items-center justify-between">
+      <header className="px-6 sm:px-8 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
         <span className="brand-mark text-[18px]">
           mom<span className="dot">.</span>
         </span>
         <span className="text-[12px] text-brand">📞 mom&apos;s calling</span>
       </header>
 
-      <section className="px-6 pt-2">
-        <h1 className="h-display text-[34px] mb-1">{proposal.voice_heading}</h1>
-        <p className="text-ink-3 text-[14px]">{proposal.voice_reason}</p>
+      <section className="px-6 sm:px-8 pt-2">
+        <h1 className="h-display text-[34px] sm:text-[40px] mb-1">
+          {proposal.voice_heading}
+        </h1>
+        <p className="text-ink-3 text-[14px] sm:text-[15px]">
+          {proposal.voice_reason}
+        </p>
       </section>
 
-      <section className="px-6 pt-8 flex-1">
-        <div className="rounded-3xl border border-line bg-bg/50 p-5">
+      <section className="px-6 sm:px-8 pt-8 flex-1">
+        <div className="rounded-3xl border border-line bg-bg/50 p-5 sm:p-6">
           <div className="text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-2">
             mom&apos;s pick
           </div>
-          <h2 className="h-display text-[24px] mb-1">{dish.name}</h2>
-          <div className="text-[13px] text-ink-2 mb-3">
+          <h2 className="h-display text-[24px] sm:text-[28px] mb-1">
+            {dish.name}
+          </h2>
+          <div className="text-[13px] sm:text-[14px] text-ink-2 mb-3">
             {dish.restaurant_name}
           </div>
           {dish.description ? (
-            <p className="text-[13px] text-ink-3 leading-snug mb-4">
+            <p className="text-[13px] sm:text-[14px] text-ink-3 leading-snug mb-4">
               {dish.description}
             </p>
           ) : null}
-          <div className="flex items-center justify-between text-[13px] text-ink-2">
+          <div className="flex items-center justify-between text-[13px] sm:text-[14px] text-ink-2">
             <span>₹{dish.price_inr}</span>
             {dish.veg === true ? (
               <span className="text-sage">veg</span>
@@ -71,10 +77,12 @@ export function Suggestion({ runId, proposal, onAfterAction }: SuggestionProps) 
       </section>
 
       {err ? (
-        <p className="px-6 text-[13px] text-rose">Couldn&apos;t reach mom: {err}</p>
+        <p className="px-6 sm:px-8 text-[13px] text-rose">
+          Couldn&apos;t reach mom: {err}
+        </p>
       ) : null}
 
-      <footer className="px-6 pb-8 pt-4 flex flex-col gap-3">
+      <footer className="px-6 sm:px-8 pb-8 sm:pb-10 pt-4 flex flex-col gap-3">
         <Button
           fullWidth
           onClick={() => decide("accept")}

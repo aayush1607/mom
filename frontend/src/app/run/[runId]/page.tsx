@@ -30,7 +30,7 @@ export default function RunPage({ params }: RunPageProps) {
   if (error) {
     return (
       <Phone label="run">
-        <div className="px-6 pt-16 text-rose text-[14px]">
+        <div className="px-6 sm:px-8 pt-16 text-rose text-[14px]">
           Couldn&apos;t reach mom: {error.message}
         </div>
       </Phone>

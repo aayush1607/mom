@@ -52,8 +52,8 @@ export default function TodayPage() {
   }
 
   return (
-    <Phone label="today">
-      <header className="px-6 pt-12 pb-2 flex items-center justify-between">
+    <Phone label="today" width="wide">
+      <header className="px-6 sm:px-10 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
         <Link href="/" className="brand-mark text-[28px]">
           mom<span className="dot">.</span>
         </Link>
@@ -65,28 +65,30 @@ export default function TodayPage() {
         </Link>
       </header>
 
-      <section className="px-6 pt-4">
-        <h1 className="h-display text-[28px] mb-1">
+      <section className="px-6 sm:px-10 pt-4">
+        <h1 className="h-display text-[28px] sm:text-[36px] mb-1">
           {upcoming ? `Next: ${upcoming.label}` : "No nudges set"}
         </h1>
-        <p className="text-ink-3 text-[13px]">
+        <p className="text-ink-3 text-[13px] sm:text-[14px]">
           {upcoming
             ? `at ${upcoming.time} — “${upcoming.nudge}”`
             : "Open settings to enable a meal slot."}
         </p>
       </section>
 
-      <section className="px-6 pt-8 flex-1 space-y-3">
+      <section className="px-6 sm:px-10 pt-8 pb-2 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         {slots.map((slot) => (
           <div
             key={slot.id}
-            className={`rounded-3xl border border-line p-5 ${
+            className={`rounded-3xl border border-line p-5 sm:p-6 flex flex-col ${
               slot.enabled ? "bg-bg/40" : "bg-card opacity-60"
             }`}
           >
             <div className="flex items-center justify-between mb-2">
               <div>
-                <div className="text-[15px] font-medium">{slot.label}</div>
+                <div className="text-[15px] sm:text-[16px] font-medium">
+                  {slot.label}
+                </div>
                 <div className="text-[12px] text-ink-3">
                   {slot.enabled ? `${slot.time} · daily` : "off"}
                 </div>
@@ -100,19 +102,21 @@ export default function TodayPage() {
               </Button>
             </div>
             {slot.enabled && slot.nudge ? (
-              <p className="text-[12px] text-ink-2 mt-1">“{slot.nudge}”</p>
+              <p className="text-[12px] sm:text-[13px] text-ink-2 mt-1">
+                “{slot.nudge}”
+              </p>
             ) : null}
           </div>
         ))}
       </section>
 
       {err ? (
-        <p className="px-6 pb-2 text-[12px] text-rose">
+        <p className="px-6 sm:px-10 pb-2 text-[12px] text-rose">
           Couldn&apos;t start: {err}
         </p>
       ) : null}
 
-      <footer className="px-6 pb-8 pt-4 text-center text-[11px] text-ink-3">
+      <footer className="px-6 sm:px-10 pb-8 pt-4 text-center text-[11px] text-ink-3">
         Backend: <code className="text-ink-2">{api.baseUrl}</code>
       </footer>
     </Phone>

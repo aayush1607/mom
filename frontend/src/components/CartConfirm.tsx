@@ -31,7 +31,7 @@ export function CartConfirm({ runId, cart, onAfterAction }: CartConfirmProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <header className="px-6 pt-12 pb-2 flex items-center justify-between">
+      <header className="px-6 sm:px-8 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
         <span className="brand-mark text-[18px]">
           mom<span className="dot">.</span>
         </span>
@@ -40,21 +40,21 @@ export function CartConfirm({ runId, cart, onAfterAction }: CartConfirmProps) {
         </span>
       </header>
 
-      <section className="px-6 pt-2">
-        <h1 className="h-display text-[28px] mb-1">
+      <section className="px-6 sm:px-8 pt-2">
+        <h1 className="h-display text-[28px] sm:text-[34px] mb-1">
           Confirm before I place it.
         </h1>
-        <p className="text-ink-3 text-[13px]">
+        <p className="text-ink-3 text-[13px] sm:text-[14px]">
           mom will use Swiggy to order. No surprises.
         </p>
       </section>
 
-      <section className="px-6 pt-6 flex-1">
-        <div className="rounded-3xl border border-line bg-bg/40 p-5">
+      <section className="px-6 sm:px-8 pt-6 flex-1">
+        <div className="rounded-3xl border border-line bg-bg/40 p-5 sm:p-6">
           {cart.lines.map((line, idx) => (
             <div
               key={`${line.name}-${idx}`}
-              className="flex items-center justify-between py-2 text-[14px]"
+              className="flex items-center justify-between py-2 text-[14px] sm:text-[15px]"
             >
               <span className="text-ink">
                 {line.qty} × {line.name}
@@ -73,36 +73,39 @@ export function CartConfirm({ runId, cart, onAfterAction }: CartConfirmProps) {
             />
           ) : null}
           <div className="border-t border-line my-3" />
-          <div className="flex items-center justify-between text-[16px] font-semibold">
+          <div className="flex items-center justify-between text-[16px] sm:text-[17px] font-semibold">
             <span>Total</span>
             <span>₹{cart.total_inr}</span>
           </div>
         </div>
 
-        <div className="mt-4 rounded-2xl border border-line p-4 text-[13px] text-ink-2">
-          <div className="text-ink-3 text-[11px] uppercase tracking-[0.18em] mb-1">
-            Delivering to
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-2xl border border-line p-4 text-[13px] sm:text-[14px] text-ink-2">
+            <div className="text-ink-3 text-[11px] uppercase tracking-[0.18em] mb-1">
+              Delivering to
+            </div>
+            <div>{cart.address_label}</div>
           </div>
-          <div>{cart.address_label}</div>
-        </div>
-
-        <div className="mt-3 rounded-2xl border border-line p-4 text-[13px] text-ink-2">
-          <div className="text-ink-3 text-[11px] uppercase tracking-[0.18em] mb-1">
-            Payment
-          </div>
-          <div>
-            {cart.payment_methods.length > 0
-              ? cart.payment_methods.join(" · ")
-              : "Pay on Swiggy"}
+          <div className="rounded-2xl border border-line p-4 text-[13px] sm:text-[14px] text-ink-2">
+            <div className="text-ink-3 text-[11px] uppercase tracking-[0.18em] mb-1">
+              Payment
+            </div>
+            <div>
+              {cart.payment_methods.length > 0
+                ? cart.payment_methods.join(" · ")
+                : "Pay on Swiggy"}
+            </div>
           </div>
         </div>
       </section>
 
       {err ? (
-        <p className="px-6 text-[13px] text-rose">Couldn&apos;t place: {err}</p>
+        <p className="px-6 sm:px-8 text-[13px] text-rose">
+          Couldn&apos;t place: {err}
+        </p>
       ) : null}
 
-      <footer className="px-6 pb-8 pt-4 flex flex-col gap-3">
+      <footer className="px-6 sm:px-8 pb-8 sm:pb-10 pt-4 flex flex-col gap-3">
         <Button
           fullWidth
           onClick={() => decide("confirm")}
