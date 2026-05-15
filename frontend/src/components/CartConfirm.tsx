@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/Button";
@@ -32,9 +33,16 @@ export function CartConfirm({ runId, cart, onAfterAction }: CartConfirmProps) {
   return (
     <div className="flex flex-col h-full">
       <header className="px-6 sm:px-8 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
-        <span className="brand-mark text-[18px]">
-          mom<span className="dot">.</span>
-        </span>
+        <Link
+          href="/today"
+          aria-label="Back to today"
+          className="inline-flex items-center gap-1.5 text-ink hover:text-brand transition-colors"
+        >
+          <span aria-hidden className="text-[16px] leading-none">←</span>
+          <span className="brand-mark text-[18px]">
+            mom<span className="dot">.</span>
+          </span>
+        </Link>
         <span className="text-[12px] text-ink-3 uppercase tracking-[0.18em]">
           confirm
         </span>
