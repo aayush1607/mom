@@ -156,3 +156,21 @@ export function isTerminal(status: AgentStatus): boolean {
 export function isAwaitingUser(status: AgentStatus): boolean {
   return status === "awaiting_proposal" || status === "awaiting_confirm";
 }
+
+// ── Activity feed (live "what mom is doing" trace) ───────────────────────────
+
+export type ActivityStatus = "done" | "active" | "error";
+
+export interface ActivityStep {
+  node: string;
+  label: string;
+  detail?: string | null;
+  status: ActivityStatus;
+  started_at: string;
+  finished_at?: string | null;
+}
+
+export interface RunActivity {
+  run_id: string;
+  steps: ActivityStep[];
+}

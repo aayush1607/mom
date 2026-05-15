@@ -32,6 +32,7 @@ from meal_agent.agent.state import (
     UserDecision,
     UserDecisionKind,
 )
+from meal_agent.api.activity import RunActivity, fold_audit_rows
 from meal_agent.persona.loader import load_pack
 from meal_agent.settings import get_settings
 from meal_agent.tools.swiggy_mcp import swiggy_tools
@@ -218,6 +219,34 @@ async def cancel_run(run_id: str, request: Request) -> dict[str, str]:
         run_id=run_id, status=AgentStatus.CANCELLED_BY_USER
     )
     return {"run_id": run_id, "status": AgentStatus.CANCELLED_BY_USER.value}
+
+
+@router.get("/runs/{run_id}/activity", response_model=RunActivity)
+async def get_run_activity(run_id: str, request: Request) -> RunActivity:
+    """Curated, mom-voice trace of what the agent has done so far.
+
+    Reads the `agent_audit` log and folds it into one step per node with
+    `status ∈ {done, active, error}`. The frontend uses this to render a
+    live "mom is doing X" panel instead of a generic spinner.
+    """
+    pool = request.app.state.audit._pool  # noqa: SLF001
+    async with pool.acquire() as conn:
+        # Confirm the run exists so callers get 404, not an empty list.
+        row = await conn.fetchrow(
+            "SELECT 1 FROM agent_runs WHERE run_id = $1", run_id
+        )
+        if row is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        rows = await conn.fetch(
+            """
+            SELECT node, event, payload, occurred_at
+              FROM agent_audit
+             WHERE run_id = $1
+             ORDER BY occurred_at ASC, id ASC
+            """,
+            run_id,
+        )
+    return fold_audit_rows(run_id, [dict(r) for r in rows])
 
 
 # ──────────────────────────────────────────────────────────────────────────────

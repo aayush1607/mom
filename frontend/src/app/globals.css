@@ -57,6 +57,21 @@ body {
   color: var(--brand);
 }
 
+/* Live activity rows in the loader — slide in as new steps land. */
+@keyframes mom-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.mom-row {
+  animation: mom-row-in 280ms ease-out both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

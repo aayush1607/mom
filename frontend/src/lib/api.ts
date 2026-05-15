@@ -11,6 +11,7 @@ import type {
   CreateRunRequest,
   CreateRunResponse,
   ResumeRequest,
+  RunActivity,
   RunSnapshot,
   UserDecisionKind,
 } from "@/types/agent";
@@ -71,6 +72,10 @@ export const api = {
 
   getRun(runId: string): Promise<RunSnapshot> {
     return request<RunSnapshot>(`/agent/runs/${runId}`);
+  },
+
+  getRunActivity(runId: string): Promise<RunActivity> {
+    return request<RunActivity>(`/agent/runs/${runId}/activity`);
   },
 
   resumeRun(

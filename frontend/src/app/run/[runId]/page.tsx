@@ -4,6 +4,7 @@ import { use } from "react";
 
 import { CartConfirm } from "@/components/CartConfirm";
 import { GiveUp } from "@/components/GiveUp";
+import { MomThinking } from "@/components/MomThinking";
 import { Pakka } from "@/components/Pakka";
 import { Phone } from "@/components/Phone";
 import { Suggestion } from "@/components/Suggestion";
@@ -22,7 +23,7 @@ export default function RunPage({ params }: RunPageProps) {
   if (isLoading || !snapshot) {
     return (
       <Phone label="run">
-        <Spinner label="mom is thinking…" />
+        <MomThinking runId={runId} />
       </Phone>
     );
   }
@@ -47,7 +48,7 @@ export default function RunPage({ params }: RunPageProps) {
   return (
     <Phone label={status}>
       {status === "running" ? (
-        <Spinner label="mom is picking…" />
+        <MomThinking runId={runId} />
       ) : status === "awaiting_proposal" && proposal ? (
         <Suggestion runId={runId} proposal={proposal} onAfterAction={mutate} />
       ) : status === "awaiting_confirm" && cart ? (
