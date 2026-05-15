@@ -348,11 +348,16 @@ async def test_place_order_dry_run_by_default(initial_state, deps, monkeypatch) 
     get_settings.cache_clear()
 
 
-async def test_review_cart_blocks_cod_only_carts(initial_state, deps) -> None:
+async def test_review_cart_blocks_cod_only_carts(
+    initial_state, deps, monkeypatch
+) -> None:
     """If the only payment method is Cash, review_cart MUST refuse the cart."""
     from meal_agent.agent.state import FailureReason
     from meal_agent.settings import get_settings
 
+    # Force block_cod=True regardless of what backend/.env happens to set,
+    # so this test stays meaningful even when the local dev .env disables it.
+    monkeypatch.setenv("AGENT_BLOCK_COD", "true")
     get_settings.cache_clear()
 
     deps.swiggy.food["get_food_cart"].ainvoke = AsyncMock(return_value=_envelope({
@@ -366,11 +371,16 @@ async def test_review_cart_blocks_cod_only_carts(initial_state, deps) -> None:
     assert update["status"] == AgentStatus.FAILED
     assert update["error"].reason == FailureReason.PAYMENT_NOT_SUPPORTED
 
+    get_settings.cache_clear()
 
-async def test_review_cart_strips_cod_keeps_other(initial_state, deps) -> None:
+
+async def test_review_cart_strips_cod_keeps_other(
+    initial_state, deps, monkeypatch
+) -> None:
     """If Cash + other methods are offered, Cash is stripped but cart proceeds."""
     from meal_agent.settings import get_settings
 
+    monkeypatch.setenv("AGENT_BLOCK_COD", "true")
     get_settings.cache_clear()
 
     deps.swiggy.food["get_food_cart"].ainvoke = AsyncMock(return_value=_envelope({
@@ -385,3 +395,5 @@ async def test_review_cart_strips_cod_keeps_other(initial_state, deps) -> None:
     assert "Cash" not in cart.payment_methods
     assert "UPI" in cart.payment_methods
     assert "Credit Card" in cart.payment_methods
+
+    get_settings.cache_clear()

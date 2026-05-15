@@ -13,12 +13,14 @@ Per-request resources are built fresh in `routes.py`:
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from meal_agent.api import routes
 from meal_agent.storage.audit import AuditWriter
@@ -32,6 +34,21 @@ from meal_agent.tools.llm import build_llms
 _ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
 if _ENV_FILE.exists():
     load_dotenv(_ENV_FILE, override=False)
+
+
+# Browser-facing origins. Defaults cover local Next.js dev (`pnpm dev` on
+# :3000). For prod, set CORS_ALLOW_ORIGINS to a comma-separated list, e.g.
+# "https://mom.example.com,https://www.mom.example.com".
+_DEFAULT_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+_origins_env = os.environ.get("CORS_ALLOW_ORIGINS", "").strip()
+ALLOWED_ORIGINS = (
+    [o.strip() for o in _origins_env.split(",") if o.strip()]
+    if _origins_env
+    else _DEFAULT_ORIGINS
+)
 
 
 @asynccontextmanager
@@ -60,6 +77,13 @@ def create_app() -> FastAPI:
         version="0.1.0",
         description="Brand-agnostic meal-decision agent. Persona injected per request.",
         lifespan=lifespan,
+    )
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=False,  # we send no cookies; Authorization (later) will be in body
+        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_headers=["*"],
     )
     app.include_router(routes.router, prefix="/agent")
     return app

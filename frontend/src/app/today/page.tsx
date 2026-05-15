@@ -115,10 +115,6 @@ export default function TodayPage() {
           Couldn&apos;t start: {err}
         </p>
       ) : null}
-
-      <footer className="px-6 sm:px-10 pb-8 pt-4 text-center text-[11px] text-ink-3">
-        Backend: <code className="text-ink-2">{api.baseUrl}</code>
-      </footer>
     </Phone>
   );
 }
