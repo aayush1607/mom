@@ -104,7 +104,7 @@ export default function TodayPage() {
                 disabled={!slot.enabled || busy !== null}
                 onClick={() => wakeMom(slot)}
               >
-                {busy === slot.id ? "Khila rahi…" : "Khila do"}
+                {busy === slot.id ? "Order kar rahi…" : "Khila do"}
               </Button>
             </div>
             {slot.enabled && slot.nudge ? (
