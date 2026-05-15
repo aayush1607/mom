@@ -61,7 +61,7 @@ function Hero() {
       </h1>
 
       <p className="text-[17px] sm:text-[19px] text-ink-2 leading-snug mb-10 max-w-[520px]">
-        mom. picks dinner in 3 seconds. one tap to confirm. no more scrolling
+        mom. picks dinner in seconds. one tap to confirm. no more scrolling
         Swiggy at midnight wondering why nothing looks good.
       </p>
 
@@ -70,7 +70,7 @@ function Hero() {
       <ul className="mt-12 grid grid-cols-3 gap-4 text-center text-[11px] uppercase tracking-[0.16em] text-ink-3 max-w-[420px]">
         <li>
           <span className="block text-[22px] text-ink mb-1 normal-case tracking-normal h-display">
-            3s
+            seconds
           </span>
           to a pick
         </li>
@@ -98,8 +98,8 @@ function Why() {
       p: "“protein-heavy, not oily.” That's it. mom. holds it for you and picks accordingly — every meal, every day.",
     },
     {
-      h: "She remembers what you skipped.",
-      p: "Swiped past butter chicken three times? She stops suggesting it. Loved that salad bowl? She'll find one again.",
+      h: "She won't push the same plate twice.",
+      p: "Tap swap and mom thinks again — same nudge, fresh idea, never the dish she just suggested.",
     },
     {
       h: "Pakka? Order placed.",
