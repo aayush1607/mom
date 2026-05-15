@@ -3,8 +3,8 @@
  * sync, no API caching (the agent is dynamic and dry-run safe — re-fetches
  * are fine). */
 
-const CACHE = "mom-shell-v1";
-const SHELL = ["/", "/manifest.webmanifest"];
+const CACHE = "mom-shell-v2";
+const SHELL = ["/", "/today", "/manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)));

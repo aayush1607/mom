@@ -75,7 +75,7 @@ export function Pakka({ order }: PakkaProps) {
         >
           Track in Swiggy →
         </a>
-        <Link href="/" className="block">
+        <Link href="/today" className="block">
           <Button variant="ghost" fullWidth>
             Done
           </Button>

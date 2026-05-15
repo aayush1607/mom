@@ -61,7 +61,7 @@ export function GiveUp({ error, status }: GiveUpProps) {
       </section>
 
       <footer className="px-6 pb-8 pt-4 flex flex-col gap-3">
-        <Link href="/" className="block">
+        <Link href="/today" className="block">
           <Button fullWidth>Back home</Button>
         </Link>
       </footer>

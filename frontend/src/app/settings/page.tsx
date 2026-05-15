@@ -33,7 +33,7 @@ export default function SettingsPage() {
     <Phone label="settings">
       <header className="px-6 pt-12 pb-2 flex items-center justify-between">
         <Link
-          href="/"
+          href="/today"
           className="text-[12px] uppercase tracking-[0.18em] text-ink-3 hover:text-ink"
         >
           ← back

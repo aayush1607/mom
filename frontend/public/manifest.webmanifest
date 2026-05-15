@@ -2,7 +2,7 @@
   "name": "mom.",
   "short_name": "mom.",
   "description": "One nudge. One tap. Meals, handled.",
-  "start_url": "/",
+  "start_url": "/today",
   "scope": "/",
   "display": "standalone",
   "background_color": "#F4EBDB",
