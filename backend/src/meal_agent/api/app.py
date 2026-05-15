@@ -15,13 +15,23 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
 
 from meal_agent.api import routes
 from meal_agent.storage.audit import AuditWriter
 from meal_agent.storage.checkpointer import checkpointer_pool
 from meal_agent.tools.llm import build_llms
+
+# Load backend/.env into process env *before* anything reads os.environ
+# (pydantic-settings classes already read .env via SettingsConfigDict, but
+# routes.py also reads SWIGGY_OAUTH_TOKEN directly to fall back when the
+# caller doesn't ship a per-user OAuth token — see _resolve_user_token).
+_ENV_FILE = Path(__file__).resolve().parents[3] / ".env"
+if _ENV_FILE.exists():
+    load_dotenv(_ENV_FILE, override=False)
 
 
 @asynccontextmanager

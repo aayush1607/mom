@@ -14,6 +14,7 @@ Bus, etc.) so process restarts don't drop in-flight runs.
 
 from __future__ import annotations
 
+import os
 import secrets
 from datetime import UTC, datetime
 from typing import Any
@@ -32,9 +33,30 @@ from meal_agent.agent.state import (
     UserDecisionKind,
 )
 from meal_agent.persona.loader import load_pack
+from meal_agent.settings import get_settings
 from meal_agent.tools.swiggy_mcp import swiggy_tools
 
 router = APIRouter()
+
+
+def _resolve_user_token(body_token: str) -> str:
+    """v1 single-user fallback: if the caller didn't ship a token (FE skips
+    Swiggy OAuth in v1), read the configured server-side env var instead.
+    Empty/whitespace-only body tokens are treated as "use the env fallback"
+    so the frontend never has to put a Swiggy bearer in the browser."""
+    if body_token and body_token.strip():
+        return body_token
+    env_var = get_settings().swiggy.auth_token_env
+    fallback = os.environ.get(env_var, "").strip()
+    if not fallback:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"No user_token in request body and {env_var} is not set. "
+                "Provide a per-user OAuth token or configure the env fallback."
+            ),
+        )
+    return fallback
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -105,7 +127,7 @@ async def create_run(
         run_id=run_id,
         thread_id=thread_id,
         run_input=body.input,
-        user_token=body.user_token,
+        user_token=_resolve_user_token(body.user_token),
         resume_value=None,
     )
 
@@ -138,7 +160,7 @@ async def resume_run(
         run_id=run_id,
         thread_id=thread_id,
         run_input=None,
-        user_token=body.user_token,
+        user_token=_resolve_user_token(body.user_token),
         resume_value={"user_decision": decision},
     )
 
@@ -160,14 +182,32 @@ async def get_run(run_id: str, request: Request) -> RunSnapshot:
 
     snap = await graph.aget_state(config)
     state_dict = snap.values if hasattr(snap, "values") else {}
-    current_status = (
-        state_dict.get("status") if isinstance(state_dict, dict) else AgentStatus.RUNNING
+    state_status = (
+        state_dict.get("status") if isinstance(state_dict, dict) else None
     )
+
+    # The checkpointer is empty until at least one node has written to state,
+    # so read the canonical run-level status from `agent_runs` whenever the
+    # checkpointed status is missing — otherwise a run that failed before
+    # any node executed (eg. Swiggy MCP 401) would forever look "running".
+    if state_status:
+        canonical = AgentStatus(state_status)
+    else:
+        canonical = await _lookup_run_status(request.app, run_id)
+
+    state_payload = _safe_dump(state_dict)
+    if canonical == AgentStatus.FAILED and not state_payload.get("error"):
+        # Surface the latest driver error so the FE has something
+        # actionable to show on the GiveUp screen.
+        latest = await _lookup_latest_driver_error(request.app, run_id)
+        if latest:
+            state_payload = {**state_payload, "error": latest}
+
     return RunSnapshot(
         run_id=run_id,
         thread_id=thread_id,
-        status=AgentStatus(current_status) if current_status else AgentStatus.RUNNING,
-        state=_safe_dump(state_dict),
+        status=canonical,
+        state=state_payload,
     )
 
 
@@ -245,9 +285,29 @@ async def _drive_run_to_next_pause(
 
     except Exception as e:  # noqa: BLE001 — top-level driver, must not crash silently
         await audit.write_event(
-            run_id=run_id, node="__driver__", event="error", payload={"detail": str(e)}
+            run_id=run_id,
+            node="__driver__",
+            event="error",
+            payload={"detail": _flatten_exception(e)},
         )
         await audit.update_run_status(run_id=run_id, status=AgentStatus.FAILED)
+
+
+def _flatten_exception(exc: BaseException) -> str:
+    """Walk ExceptionGroup trees and join leaf messages — most useful when
+    the raw exception is a TaskGroup wrapper (mcp/streamable_http style)."""
+    parts: list[str] = []
+
+    def _walk(e: BaseException) -> None:
+        sub = getattr(e, "exceptions", None)
+        if sub:
+            for s in sub:
+                _walk(s)
+        else:
+            parts.append(f"{type(e).__name__}: {e}")
+
+    _walk(exc)
+    return " | ".join(parts) if parts else f"{type(exc).__name__}: {exc}"
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -268,6 +328,55 @@ async def _lookup_thread_id(app, run_id: str) -> str:
         if row is None:
             raise HTTPException(status_code=404, detail="run not found")
         return row["thread_id"]
+
+
+async def _lookup_run_status(app, run_id: str) -> AgentStatus:
+    """Read the canonical run-level status from the `agent_runs` table."""
+    pool = app.state.audit._pool  # noqa: SLF001
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            "SELECT status FROM agent_runs WHERE run_id = $1", run_id
+        )
+        if row is None:
+            raise HTTPException(status_code=404, detail="run not found")
+        return AgentStatus(row["status"])
+
+
+async def _lookup_latest_driver_error(
+    app, run_id: str
+) -> dict[str, Any] | None:
+    """Pull the most recent `__driver__` audit error so the FE can show
+    a meaningful message on the GiveUp screen when the graph never wrote
+    its own `error` field (eg. Swiggy MCP 401 before the first node)."""
+    pool = app.state.audit._pool  # noqa: SLF001
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            SELECT payload
+              FROM agent_audit
+             WHERE run_id = $1 AND node = '__driver__' AND event = 'error'
+             ORDER BY occurred_at DESC
+             LIMIT 1
+            """,
+            run_id,
+        )
+        if row is None:
+            return None
+        payload = row["payload"]
+        if isinstance(payload, str):
+            try:
+                import json as _json
+                payload = _json.loads(payload)
+            except Exception:  # noqa: BLE001
+                return {"reason": "mcp_error", "detail": payload}
+        if not isinstance(payload, dict):
+            return None
+        detail = str(payload.get("detail", ""))
+        # Crude classification — good enough for v1 voice strings.
+        reason = "mcp_error"
+        if "401" in detail or "Unauthorized" in detail:
+            reason = "mcp_error"
+        return {"reason": reason, "detail": detail, "voice_message": None}
 
 
 async def _resolve_voice_pack_id(
