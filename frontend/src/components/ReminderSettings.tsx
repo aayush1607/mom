@@ -77,7 +77,7 @@ export function ReminderSettings() {
             Meal-time reminders
           </div>
           <p className="text-[12px] sm:text-[13px] text-ink-3 mt-0.5">
-            mom nudges you at the times you set above. One tap to wake mom
+            mom nudges you at the times you set above. One tap to call mom
             from the notification.
           </p>
         </div>

@@ -181,6 +181,6 @@ function titleFor(slot: NudgeSlot): string {
 
 function bodyFor(slot: NudgeSlot): string {
   const nudge = (slot.nudge || "").trim();
-  if (nudge) return `${nudge} — tap to wake mom.`;
-  return "Tap to wake mom.";
+  if (nudge) return `${nudge} — tap to call mom.`;
+  return "Tap to call mom.";
 }
