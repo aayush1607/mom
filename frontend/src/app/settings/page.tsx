@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { AddressPicker } from "@/components/AddressPicker";
 import { Phone } from "@/components/Phone";
 import { Button } from "@/components/ui/Button";
+import { useAddresses } from "@/lib/useAddresses";
 import {
   saveSlots,
   useSlots,
@@ -13,6 +15,7 @@ import {
 
 export default function SettingsPage() {
   const persisted = useSlots();
+  const { selected: selectedAddress } = useAddresses();
   // Edit-buffer seeded once from persisted state. Multi-tab sync is out of
   // scope for v1 — settings are single-user, single-device.
   const [slots, setSlots] = useState<NudgeSlot[]>(persisted);
@@ -50,6 +53,25 @@ export default function SettingsPage() {
         <p className="text-ink-3 text-[13px] sm:text-[14px]">
           Saved on this device. No account yet.
         </p>
+      </section>
+
+      <section className="px-6 sm:px-10 pt-6">
+        <div className="rounded-3xl border border-line bg-bg/30 p-4 sm:p-5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-[11px] uppercase tracking-[0.18em] text-ink-3 mb-1">
+              Delivering to
+            </div>
+            <div className="text-[15px] font-semibold truncate">
+              {selectedAddress?.label ?? "Pick an address"}
+            </div>
+            {selectedAddress?.address_line ? (
+              <div className="text-[12px] text-ink-3 mt-0.5 line-clamp-1">
+                {selectedAddress.address_line}
+              </div>
+            ) : null}
+          </div>
+          <AddressPicker className="shrink-0" />
+        </div>
       </section>
 
       <section className="px-6 sm:px-10 pt-6 pb-4 flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">

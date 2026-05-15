@@ -33,6 +33,7 @@ from meal_agent.agent.state import (
     UserDecisionKind,
 )
 from meal_agent.api.activity import RunActivity, fold_audit_rows
+from meal_agent.api.addresses import ListAddressesResponse, fetch_addresses
 from meal_agent.persona.loader import load_pack
 from meal_agent.settings import get_settings
 from meal_agent.tools.swiggy_mcp import swiggy_tools
@@ -247,6 +248,23 @@ async def get_run_activity(run_id: str, request: Request) -> RunActivity:
             run_id,
         )
     return fold_audit_rows(run_id, [dict(r) for r in rows])
+
+
+@router.get("/addresses", response_model=ListAddressesResponse)
+async def list_addresses() -> ListAddressesResponse:
+    """List the user's saved Swiggy addresses for the picker on /today.
+
+    Stateless proxy: opens an MCP session with the env-configured token,
+    fetches addresses, normalises, and returns. Never persists.
+
+    v1 single-user mode — uses the env-fallback token resolved by
+    `_resolve_user_token("")`. Once we ship per-user OAuth, accept the
+    token via a header (GET can't have a body) the same way the
+    other endpoints accept it via the request body.
+    """
+    token = _resolve_user_token("")
+    async with swiggy_tools(user_token=token) as tools:
+        return await fetch_addresses(tools)
 
 
 # ──────────────────────────────────────────────────────────────────────────────

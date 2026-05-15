@@ -174,3 +174,17 @@ export interface RunActivity {
   run_id: string;
   steps: ActivityStep[];
 }
+
+// ── Saved Swiggy addresses (picker on /today) ────────────────────────────────
+
+export interface Address {
+  id: string;
+  label: string;
+  address_line: string;
+  category?: string | null;
+  phone_masked?: string | null;
+}
+
+export interface ListAddressesResponse {
+  addresses: Address[];
+}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { AddressPicker } from "@/components/AddressPicker";
 import { Phone } from "@/components/Phone";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/lib/api";
@@ -16,14 +17,16 @@ import {
   useSlots,
   type NudgeSlot,
 } from "@/lib/slots";
+import { useAddresses } from "@/lib/useAddresses";
 
 const USER_ID = process.env.NEXT_PUBLIC_USER_ID ?? "u_dev";
-const ADDRESS_ID =
+const ADDRESS_ID_FALLBACK =
   process.env.NEXT_PUBLIC_TEST_ADDRESS_ID ?? "d2t62h7va4r6aip36a50";
 
 export default function TodayPage() {
   const router = useRouter();
   const slots = useSlots();
+  const { selected: selectedAddress } = useAddresses();
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -36,8 +39,8 @@ export default function TodayPage() {
       const res = await api.createRun({
         input: {
           user_id: USER_ID,
-          address_id: ADDRESS_ID,
-          address_label: "Home",
+          address_id: selectedAddress?.id ?? ADDRESS_ID_FALLBACK,
+          address_label: selectedAddress?.label ?? "Home",
           prompt: slotToPrompt(slot),
           context: slotToContext(slot),
           constraints: slotToConstraints(slot),
@@ -53,16 +56,19 @@ export default function TodayPage() {
 
   return (
     <Phone label="today" width="wide">
-      <header className="px-6 sm:px-10 pt-12 sm:pt-14 pb-2 flex items-center justify-between">
+      <header className="px-6 sm:px-10 pt-12 sm:pt-14 pb-2 flex items-center justify-between gap-3">
         <Link href="/" className="brand-mark text-[28px]">
           mom<span className="dot">.</span>
         </Link>
-        <Link
-          href="/settings"
-          className="text-[12px] uppercase tracking-[0.18em] text-ink-3 hover:text-ink"
-        >
-          settings
-        </Link>
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          <AddressPicker />
+          <Link
+            href="/settings"
+            className="text-[12px] uppercase tracking-[0.18em] text-ink-3 hover:text-ink shrink-0"
+          >
+            settings
+          </Link>
+        </div>
       </header>
 
       <section className="px-6 sm:px-10 pt-4">

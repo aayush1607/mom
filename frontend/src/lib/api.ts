@@ -10,6 +10,7 @@
 import type {
   CreateRunRequest,
   CreateRunResponse,
+  ListAddressesResponse,
   ResumeRequest,
   RunActivity,
   RunSnapshot,
@@ -76,6 +77,10 @@ export const api = {
 
   getRunActivity(runId: string): Promise<RunActivity> {
     return request<RunActivity>(`/agent/runs/${runId}/activity`);
+  },
+
+  listAddresses(): Promise<ListAddressesResponse> {
+    return request<ListAddressesResponse>("/agent/addresses");
   },
 
   resumeRun(
